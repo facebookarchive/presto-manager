@@ -1,0 +1,623 @@
+# Draft API Specification, incomplete
+#
+# Assume all sections are missing information unless marked
+# as complete.
+#
+# This details the API exposed by the agents only.
+#
+# The Controller's API is very similar, but must be preceded
+# with either "/presto", "/node/{nodeID}", "/coordinator", or
+# "/workers", which will operate on the entire cluster, the
+# specified node, the coordinator, or all workers, respectively.
+# Certain operations will only be exposed through some of those
+# paths, and the Controller may expose certain Presto Manager
+# configuration operations not exposed by the agents.
+#
+#
+# TODO:
+# Add operationId to all operations
+# Add appropriate tags to operations
+# Complete all schemas
+# See TODOs in file body
+
+# The CAPITALIZED key words "MUST", "MUST NOT", "REQUIRED",
+# "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",
+# "MAY", and "OPTIONAL" in this document are to be interpreted
+# as described in RFC 2119.
+# RFC 2119 is present for API development, and may be removed in the future.
+
+swagger: '2.0'
+info:
+  title: Presto Manager API
+  description: 'Presto Manager API, as exposed by an Agent'
+  version: 0.0.2
+host: localhost:0000
+basePath: /v0
+schemes:
+- https
+
+# List of Swagger Schema extensions.
+x-extension-definitions:
+- name: x-note
+  description: API design notes.
+  type: string
+- name: x-details
+  description: OBject-structured description.
+  type: object
+- name: x-content
+  description: |
+    Parameter/Response content, as seen in OpenAPI 3
+    An object, where keys are MIME types, and values are schemas.
+  type: object
+- name: x-definitions
+  description: |
+    Definitions for use in  x-content, because swagger does not
+    resolve references within extensions.
+
+tags:
+- name: async
+  description: Asynchronous operation
+  x-note: "SHOULD have response 202"
+- name: sync
+  description: Synchronous operations
+  x-note: "SHOULD NOT have response 202"
+- name: syncfail
+  description: Synchronous only on certain failures
+  x-note: "MUST be accompanied by the `async` tag"
+
+
+parameters:
+  fileName:
+    in: path
+    name: file
+    description: "The name of a file"
+    required: true
+    type: string
+  pathName:
+    in: path
+    name: name
+    description: "The name of an item"
+    required: true
+    type: string
+  property:
+    in: path
+    name: property
+    description: "A specific property"
+    required: true
+    type: string
+  stopType:
+    in: query
+    name: type
+    description: "What type of stop command to issue"
+    required: false
+    type: string
+    default: graceful
+    enum: [graceful, terminate, kill]
+    x-note: "MUST be accompanied by #/responses/invalidParameter"
+  asyncPriority:
+    in: query
+    name: priority
+    description: "Specify behavior if a conflicting async operation is running"
+    type: string
+    required: false
+    default: fail
+    enum: [fail, queue, force]
+    x-details:
+    - "Effect of each value:"
+    - fail: "This operation fails"
+      queue: "This operation is added to a queue to run after the previous operations"
+      force: "This operation begins immediately; the previous operation is stopped"
+    x-note: "MUST be accompanied by #/responses/invalidParameter"
+
+responses:
+  agentTimeout: # send as 504 from Controller if the agent times out
+    description: "An agent did not return fast enough"
+  deleted:
+    description: "Resource deleted successfully"
+  notFound:
+    description: "Resource not found"
+  invalidParameter:
+    description: "Invalid parameters"
+    schema:
+      type: string
+
+definitions:
+  properties:
+    description: "A mapping of property names to values"
+    type: object
+    additionalProperties:
+      type: string
+  propertiesFile:
+    description: "A Java properties file"
+  singleURI:
+    description: "A single line containing a single URI and no comments."
+
+x-definitions:
+  properties:
+    description: "A mapping of property names to values"
+    type: object
+    additionalProperties:
+      type: string
+  propertiesFile:
+    description: "A Java properties file"
+  singleURI:
+    description: "A single line containing a single URI and no comments."
+
+
+
+paths:
+
+# All paths (indented paths have finalized basic definitions)
+#  /install ?
+  #  /status
+  #  /status/start
+  #  /status/stop
+  #  /status/restart
+  #  /status/version
+# /status/{others}
+  #  /config
+  #  /config/{name}
+  #  /config/{name}/{property}
+  #  /connectors
+  #  /connectors/{name}
+  #  /connectors/{name}/{property}
+#  /plugins
+#  /plugins/{name}
+#  /plugins/{name}/???
+  #  /log
+  #  /log/file
+#  /manager/???
+
+  /:
+    options:
+      summary: "Get API documentation"
+      produces:
+      - application/json
+      responses:
+       200:
+        description: "Retrieved API documentation"
+        x-note: This will return this document, possible slightly modified.
+        headers:
+          Allow:
+            type: string
+            default: OPTIONS
+            pattern: ^OPTIONS$
+
+  /config:
+    get:
+      summary: "Get all configuration"
+      produces:
+      - application/json # TODO: provide a schema
+      responses:
+        200:
+          description: "Retrieved configuration"
+          schema:
+            description: "A mapping of configuration file names to their properties"
+            type: object
+            additionalProperties:
+              $ref: '#/definitions/properties'
+            example: {
+              "config": {
+                "node.id": "abcdefg",
+                "discovery-server.enabled": false
+              },
+              "jvm": {
+                "default.java-home": "/opt/java"
+              }
+            }
+    # TODO: support patch?
+
+  /config/{file}:
+    parameters:
+    - $ref: '#/parameters/fileName'
+    get:
+      summary: "Get configuration by file"
+      produces:
+      - application/json
+      # TODO: Could use Accept header to get in .properties format
+      responses:
+        200:
+          description: "Retrieved file"
+          schema:
+            $ref: '#/definitions/properties'
+        404:
+          $ref: '#/responses/notFound'
+
+    put:
+      summary: "Replace configuration file"
+      consumes:
+      - text/plain # .properties file
+      - application/json
+      - text/uri-list
+      parameters:
+      - name: body
+        in: body
+        required: true
+        description: "Either the file to put, in .properties or JSON form, or the URL of a location at which it may be found."
+        schema:
+          type: string
+          x-note: May be a string or an object; swagger requires a type to be given
+          x-content:
+            text/plain:
+              $ref: '#/x-definitions/propertiesFile'
+            application/json:
+              $ref: '#/x-definitions/properties'
+            text/uri-list:
+              $ref: '#/x-definitions/singleURI'
+      responses:
+        200:
+          description: "Configuration file replaced"
+        201:
+          description: "Configuration file created"
+        202:
+          description: "Acknowledged direction to download file from elsewhere"
+
+    patch:
+      summary: "Update configuration parameters"
+      consumes:
+      - application/json
+      parameters:
+      - name: properties
+        in: body
+        required: true
+        description: "A mapping of properties/values to create or update, with a null value being used to delete."
+        schema:
+          $ref: '#/definitions/properties'
+      responses:
+        200:
+          description: "Configuration updated"
+        400:
+          description: "Patch JSON did not match schema"
+        404:
+          $ref: '#/responses/notFound'
+
+    delete:
+      summary: "Delete a configuration file"
+      responses:
+        204:
+          $ref: '#/responses/deleted'
+        404:
+          $ref: '#/responses/notFound'
+
+  /config/{file}/{property}:
+    parameters:
+    - $ref: '#/parameters/fileName'
+    - $ref: '#/parameters/property'
+    get:
+      summary: "Get specific configuration property"
+      produces:
+      - text/plain
+      responses:
+        200:
+          description: "Retrieved property"
+          schema:
+            type: string
+        404:
+          $ref: '#/responses/notFound'
+    put:
+      summary: "Update or create a configuration property"
+      consumes:
+      - text/plain
+      responses:
+        200:
+          description: "Replaced configuration property"
+        201:
+          description: "Created configuration property "
+    delete:
+      summary: "Delete a configuration property"
+      responses:
+        204:
+          description: "Deleted configuration property"
+        404:
+          $ref: '#/responses/notFound'
+
+  /connectors:
+      get:
+        summary: "Get all connectors"
+        produces:
+        - application/json # TODO: provide a schema
+        responses:
+          200:
+            description: "Retrieved connectors"
+            schema:
+              description: "A mapping of connector names to their properties"
+              type: object
+              additionalProperties:
+                $ref: '#/definitions/properties'
+    # TODO: support patch?
+
+  /connectors/{file}:
+    parameters:
+    - $ref: '#/parameters/fileName'
+    get:
+      summary: "Get connectors by file"
+      produces:
+      - application/json
+      responses:
+        200:
+          description: "Retrieved connector configuration"
+          schema:
+             $ref: '#/definitions/properties'
+        404:
+          $ref: '#/responses/notFound'
+
+    # TODO: PUT
+    put:
+      summary: "Replace connector configuration file"
+      consumes:
+      - text/plain # .properties file
+      - application/json
+      - text/uri-list
+      parameters:
+      - name: body
+        in: body
+        required: true
+        description: |
+          Either the file to put, in .properties (text/plain) or JSON (application/json) form,
+          or the URL of a location (text/uri-list, sinle line) at which it may be found.
+        schema:
+          type: string
+          x-note: May be a string or an object; swagger requires a type to be given
+          x-content:
+            text/plain:
+              $ref: '#/x-definitions/propertiesFile'
+            application/json:
+              $ref: '#/x-definitions/properties'
+            text/uri-list:
+              $ref: '#/x-definitions/singleURI'
+      responses:
+        200:
+          description: "Connector configuration file replaced"
+        201:
+          description: "Connector configuration file created"
+        202:
+          description: "Acknowledged direction to download file from elsewhere"
+
+    patch:
+      summary: "Update connector configuration parameters"
+      consumes:
+      - application/json
+      parameters:
+      - name: properties
+        in: body
+        required: true
+        description: "A mapping of properties/values to create or update, with a null value being used to delete."
+        schema:
+          $ref: '#/definitions/properties'
+      responses:
+        200:
+          description: "Connector configuration updated"
+        400:
+          description: "Patch JSON did not match schema"
+        404:
+          $ref: '#/responses/notFound'
+
+  /connectors/{file}/{property}:
+    parameters:
+    - $ref: '#/parameters/fileName'
+    - $ref: '#/parameters/property'
+    get:
+      summary: "Get specific connector property"
+      produces:
+      - text/plain
+      responses:
+        200:
+          description: "Retrieved connector property"
+          schema:
+            type: string
+        404:
+          $ref: '#/responses/notFound'
+    put:
+      summary: "Update or create a connector property"
+      consumes:
+      - text/plain
+      responses:
+        200:
+          description: "Replaced connector property"
+        201:
+          description: "Created connector property"
+    delete:
+      summary: "Delete a connector property"
+      responses:
+        204:
+          description: "Deleted connector property"
+        404:
+          $ref: '#/responses/notFound'
+
+
+  /plugins:
+    # maps to $PRESTO/${plugin.config-dir} if set,
+    # or $PRESTO/plugin otherwise
+    get:
+      summary: "Get all plugins"
+      produces:
+      - application/json
+      responses: 
+        200:
+          description: "Retrieved list of plugins"
+          schema:
+            description: "A list of plugin names that may extend the path"
+            type: array
+            items:
+              type: string
+
+  /plugins/{name}:
+    parameters:
+    - $ref: '#/parameters/pathName'
+    get:
+      summary: "Get plugin information"
+      produces:
+      - application/json
+      responses:
+        200:
+          description: "Retrieved plugin information"
+          schema:
+            type: object
+            # TODO: add schema for plugin information
+        404:
+          $ref: '#/responses/notFound'
+    put:
+      summary: "Create or replace a plugin"
+      consumes:
+      - application/octet-stream #or application/json
+      # TODO: determine how plugins are distributed
+      responses: 
+        200: 
+          description: "Plugin deployed"
+    delete:
+      summary: "Remove a plugin"
+      responses: 
+        204:
+          description: "Plugin removed"
+
+  /plugins/{name}/{file}:
+    get:
+      summary: "Retrieve plugin file"
+      produces:
+      - text/plain # maybe
+      - application/octet-stream
+      # TODO: determine how plugin files are distributed
+      responses:
+        200:
+          description: "Retrieved plugin file"
+        404:
+          $ref: '#/responses/notFound'
+    put:
+      summary: "Create or replace plugin file"
+      consumes:
+      - text/plain
+      - application/octet-stream
+      parameters:
+      - $ref: '#/parameters/pathName'
+      - $ref: '#/parameters/fileName'
+      responses: 
+        200: 
+          description: "Updated plugin file"
+        201: 
+          description: "Created plugin file"
+    delete:
+      summary: "Delete plugin file"
+      responses:
+        204:
+          description: "Deleted plugin file"
+        404:
+          $ref: '#/responses/notFound'
+
+  /status:
+    get:
+      summary: "Get status of the Presto instance"
+      parameters:
+      - name: param
+        in: query
+        description: "Specific information to retrieve"
+        required: false
+        type: array
+        items:
+          type: string
+      produces:
+      - application/json
+      responses:
+        200:
+          description: "Retrieved Presto status"
+          schema: # TODO: Add proper status schema
+            type: object
+            additionalProperties:
+              type: string
+
+  # TODO: Add more /status information
+  
+  /status/version:
+    get:
+      summary: "Get current Presto version"
+      produces:
+      - text/plain
+      responses:
+        200:
+          description: "Version number retrieved"
+    post:
+      description: "Change presto version"
+      # TODO: Should this be the upgrade method?
+      parameters:
+      - $ref: '#/parameters/asyncPriority'
+      - $ref: '#/parameters/stopType'
+      responses:
+        202:
+          description: "Acknowledged upgrade request"
+
+  /status/start:
+    post:
+      summary: "Start Presto"
+      parameters:
+      - $ref: '#/parameters/asyncPriority'
+      responses:
+        202:
+          description: "Acknowledged request to start"
+        400:
+          $ref: '#/responses/invalidParameter'
+  /status/stop:
+    post:
+      summary: "Stop Presto"
+      parameters:
+      - $ref: '#/parameters/asyncPriority'
+      - $ref: '#/parameters/stopType'
+      responses:
+        202:
+          description: "Acknowledged request to stop"
+        400:
+          $ref: '#/responses/invalidParameter'
+  /status/restart:
+      post:
+        summary: "Restart Presto"
+        parameters:
+        - $ref: '#/parameters/asyncPriority'
+        - $ref: '#/parameters/stopType'
+        responses:
+          202:
+            description: "Acknowledged request to restart"
+          400:
+            $ref: '#/responses/invalidParameter'
+
+  /logs/{file}: # TODO: do we want more filters?
+    parameters:
+    - $ref: '#/parameters/fileName'
+    - name: to
+      in: query
+      description: "Ignore logs after this date/time"
+      required: false
+      type: string
+      format: dateTime
+    get:
+      summary: "Get Presto log file"
+      parameters:
+      - name: from
+        in: query
+        description: "Ignore logs before this date/time"
+        required: false
+        type: string
+        format: dateTime
+      - name: level
+        in: query
+        description: "Restrict to specific log level"
+        required: false
+        type: string
+        enum: [info, debug, warn, error]
+      produces:
+      - text/plain # TODO: should logs be serialized into a more useful format? probably not
+      responses:
+        200:
+          description: "Retrieved log"
+        400:
+          $ref: '#/responses/invalidParameter'
+        404:
+          $ref: '#/responses/notFound'
+    delete:
+      summary: "Delete Presto logs"
+      produces:
+      - text/plain
+      responses:
+        204:
+          description: "Deleted logs"
+        400:
+          $ref: '#/responses/invalidParameter'
+        404:
+          $ref: '#/responses/notFound'
