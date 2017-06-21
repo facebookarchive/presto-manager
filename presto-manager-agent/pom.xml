@@ -21,7 +21,7 @@
         <dependency>
             <groupId>com.teradata.prestomanager</groupId>
             <artifactId>presto-manager-common</artifactId>
-            <version>${version}</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 
