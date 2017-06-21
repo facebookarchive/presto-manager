@@ -33,7 +33,9 @@
     </properties>
 
     <modules>
-        <module>presto-manager-core</module>
+        <module>presto-manager-common</module>
+        <module>presto-manager-agent</module>
+        <module>presto-manager-controller</module>
     </modules>
 
     <dependencies>
@@ -83,33 +85,7 @@
 
     <build>
         <plugins>
-            <!-- This plugin should be included in any submodule with an executable.
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.0.0</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <finalName>${executable-name}</finalName>
-                            <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <shadedClassifierName>executable</shadedClassifierName>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <manifestEntries>
-                                        <Main-Class>${main-class}</Main-Class>
-                                    </manifestEntries>
-                                </transformer>
-                            </transformers>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            -->
+
         </plugins>
     </build>
 </project>

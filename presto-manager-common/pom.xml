@@ -10,6 +10,6 @@
         <version>0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>presto-manager-core</artifactId>
+    <artifactId>presto-manager-common</artifactId>
 
 </project>
