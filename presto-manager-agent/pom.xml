@@ -13,7 +13,7 @@
     <artifactId>presto-manager-agent</artifactId>
 
     <properties>
-        <main-class>com.teradata.prestomanager.agent.Agent</main-class>
+        <main-class>com.teradata.prestomanager.agent.AgentServer</main-class>
         <executable-name>AgentServer</executable-name>
     </properties>
 
