@@ -51,7 +51,7 @@ x-extension-definitions:
   description: API design notes.
   type: string
 - name: x-details
-  description: OBject-structured description.
+  description: Object-structured description.
   type: object
 - name: x-content
   description: |
@@ -604,7 +604,7 @@ paths:
         200:
           description: "Version number retrieved"
     post:
-      # TODO: Do we upgrading by posting to /status/version?
+      # TODO: Do we upgrade by posting to /status/version?
       # It doesn't seem great, but I haven't thought of something better.
       description: "Change presto version"
       parameters:
