@@ -1,5 +1,5 @@
 // Temporary file to add directory to git.
-package com.teradata.prestomanager.server;
+package com.teradata.prestomanager.common;
 class Server {
 
 }
