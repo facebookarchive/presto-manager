@@ -6,9 +6,10 @@
 
     <groupId>com.teradata.prestomanager</groupId>
     <artifactId>presto-manager</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <name>Presto Manager</name>
     <inceptionYear>2017</inceptionYear>
 
     <licenses>
@@ -26,6 +27,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
+        <guice.version>4.1.0</guice.version>
         <jetty.version>9.4.6.v20170531</jetty.version>
         <jersey.version>2.26-b06</jersey.version>
     </properties>
@@ -35,6 +37,12 @@
     </modules>
 
     <dependencies>
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <version>${guice.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
@@ -75,6 +83,7 @@
 
     <build>
         <plugins>
+            <!-- This plugin should be included in any submodule with an executable.
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -86,7 +95,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <!-- <finalName>NameOfExecutable</finalName> -->
+                            <finalName>${executable-name}</finalName>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
                             <shadedClassifierName>executable</shadedClassifierName>
                             <transformers>
@@ -100,6 +109,7 @@
                     </execution>
                 </executions>
             </plugin>
+            -->
         </plugins>
     </build>
 </project>
