@@ -17,6 +17,14 @@
         <executable-name>AgentServer</executable-name>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.teradata.prestomanager</groupId>
+            <artifactId>presto-manager-common</artifactId>
+            <version>${version}</version>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
