@@ -18,7 +18,16 @@
 # Add operationId to all operations
 # Add appropriate tags to operations
 # Complete all schemas
+# Make sure responses are correct and not redundant
 # See TODOs in file body
+#
+#
+# For an explanation of Swagger schema extensions see the
+# x-extension-definitions property.
+#
+# Objects with x-not-implemented set to true may not have all
+# details finalized, particularly asynchronous responses.
+#
 
 # The CAPITALIZED key words "MUST", "MUST NOT", "REQUIRED",
 # "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",
@@ -53,6 +62,9 @@ x-extension-definitions:
   description: |
     Definitions for use in  x-content, because swagger does not
     resolve references within extensions.
+- name: x-not-impemened
+  type: boolean
+  default: false
 
 tags:
 - name: async
@@ -120,6 +132,10 @@ responses:
     description: "Invalid parameters"
     schema:
       type: string
+  acknowledged:
+    description: "Acknowledged request and queued operation"
+  conflict:
+    description: "Request conflicts with current state"
 
 definitions:
   properties:
@@ -222,18 +238,31 @@ paths:
             $ref: '#/definitions/properties'
         404:
           $ref: '#/responses/notFound'
-
+    post:
+      summary: "Replace this file with the file at the given URL"
+      parameters:
+      - name: url
+        in: body
+        required: true
+        description: "A URL at which to find the new file"
+        schema:
+          $ref: '#/definitions/singleURI'
+      responses:
+        202:
+          $ref: '#/responses/acknowledged'
+        409:
+          $ref: '#/responses/conflict'
     put:
+      x-not-implemented: true
       summary: "Replace configuration file"
       consumes:
       - text/plain # .properties file
       - application/json
-      - text/uri-list
       parameters:
       - name: body
         in: body
         required: true
-        description: "Either the file to put, in .properties or JSON form, or the URL of a location at which it may be found."
+        description: "The file to put, in .properties or JSON format"
         schema:
           type: string
           x-note: May be a string or an object; swagger requires a type to be given
@@ -242,17 +271,21 @@ paths:
               $ref: '#/x-definitions/propertiesFile'
             application/json:
               $ref: '#/x-definitions/properties'
-            text/uri-list:
-              $ref: '#/x-definitions/singleURI'
+      - name: file
+        in: query
+        description: "The real name of the file"
+        required: false
+        type: string
       responses:
         200:
           description: "Configuration file replaced"
         201:
           description: "Configuration file created"
         202:
-          description: "Acknowledged direction to download file from elsewhere"
-
+          $ref: '#/responses/acknowledged'
     patch:
+      x-not-implemented: true
+      x-note: This is the first non-MVP feature I would like to implement.
       summary: "Update configuration parameters"
       consumes:
       - application/json
@@ -264,16 +297,17 @@ paths:
         schema:
           $ref: '#/definitions/properties'
       responses:
-        200:
-          description: "Configuration updated"
+        202:
+          $ref: '#/responses/acknowledged'
         400:
           description: "Patch JSON did not match schema"
         404:
           $ref: '#/responses/notFound'
-
     delete:
       summary: "Delete a configuration file"
       responses:
+        202:
+          $ref: '#/responses/acknowledged'
         204:
           $ref: '#/responses/deleted'
         404:
@@ -295,6 +329,7 @@ paths:
         404:
           $ref: '#/responses/notFound'
     put:
+      x-not-implemented: true
       summary: "Update or create a configuration property"
       consumes:
       - text/plain
@@ -302,12 +337,13 @@ paths:
         200:
           description: "Replaced configuration property"
         201:
-          description: "Created configuration property "
+          description: "Created configuration property"
     delete:
+      x-not-implemented: true
       summary: "Delete a configuration property"
       responses:
         204:
-          description: "Deleted configuration property"
+          $ref: '#/responses/deleted'
         404:
           $ref: '#/responses/notFound'
 
@@ -327,6 +363,7 @@ paths:
     # TODO: support patch?
 
   /connectors/{file}:
+    # TODO: Connectors may need more advanced management
     parameters:
     - $ref: '#/parameters/fileName'
     get:
@@ -340,9 +377,22 @@ paths:
              $ref: '#/definitions/properties'
         404:
           $ref: '#/responses/notFound'
-
-    # TODO: PUT
+    post:
+      summary: "Replace this file with the file at the given URL"
+      parameters:
+      - name: url
+        in: body
+        required: true
+        description: "A URL at which to find the new file"
+        schema:
+          $ref: '#/definitions/singleURI'
+      responses:
+        202:
+          $ref: '#/responses/acknowledged'
+        409:
+          $ref: '#/responses/conflict'
     put:
+      x-not-implemented: true
       summary: "Replace connector configuration file"
       consumes:
       - text/plain # .properties file
@@ -352,9 +402,7 @@ paths:
       - name: body
         in: body
         required: true
-        description: |
-          Either the file to put, in .properties (text/plain) or JSON (application/json) form,
-          or the URL of a location (text/uri-list, sinle line) at which it may be found.
+        description: "The file to put, in .properties (text/plain) or JSON (application/json) format"
         schema:
           type: string
           x-note: May be a string or an object; swagger requires a type to be given
@@ -363,17 +411,20 @@ paths:
               $ref: '#/x-definitions/propertiesFile'
             application/json:
               $ref: '#/x-definitions/properties'
-            text/uri-list:
-              $ref: '#/x-definitions/singleURI'
+      - name: file
+        in: query
+        description: "The real name of the file"
+        required: false
+        type: string
       responses:
         200:
           description: "Connector configuration file replaced"
         201:
           description: "Connector configuration file created"
         202:
-          description: "Acknowledged direction to download file from elsewhere"
-
+          $ref: '#/responses/acknowledged'
     patch:
+      x-not-implemented: true
       summary: "Update connector configuration parameters"
       consumes:
       - application/json
@@ -389,6 +440,15 @@ paths:
           description: "Connector configuration updated"
         400:
           description: "Patch JSON did not match schema"
+        404:
+          $ref: '#/responses/notFound'
+    delete:
+      summary: "Delete a connector file"
+      responses:
+        202:
+          $ref: '#/responses/acknowledged'
+        204:
+          $ref: '#/responses/deleted'
         404:
           $ref: '#/responses/notFound'
 
@@ -408,6 +468,7 @@ paths:
         404:
           $ref: '#/responses/notFound'
     put:
+      x-not-implemented: true
       summary: "Update or create a connector property"
       consumes:
       - text/plain
@@ -417,15 +478,18 @@ paths:
         201:
           description: "Created connector property"
     delete:
+      x-not-implemented: true
       summary: "Delete a connector property"
       responses:
         204:
-          description: "Deleted connector property"
+          $ref: '#/responses/deleted'
         404:
           $ref: '#/responses/notFound'
 
 
   /plugins:
+    x-not-implemented: true
+    x-note: Plugins are not included in the MVP. All details are subject to revision.
     # maps to $PRESTO/${plugin.config-dir} if set,
     # or $PRESTO/plugin otherwise
     get:
@@ -442,6 +506,8 @@ paths:
               type: string
 
   /plugins/{name}:
+    x-not-implemented: true
+    x-note: Plugins are not included in the MVP. All details are subject to revision.
     parameters:
     - $ref: '#/parameters/pathName'
     get:
@@ -471,6 +537,8 @@ paths:
           description: "Plugin removed"
 
   /plugins/{name}/{file}:
+    x-not-implemented: true
+    x-note: Plugins are not included in the MVP. All details are subject to revision.
     get:
       summary: "Retrieve plugin file"
       produces:
@@ -507,13 +575,14 @@ paths:
     get:
       summary: "Get status of the Presto instance"
       parameters:
-      - name: param
+      - name: params
         in: query
         description: "Specific information to retrieve"
         required: false
         type: array
         items:
           type: string
+        x-details: 'Example: /status?params=id,version,os'
       produces:
       - application/json
       responses:
@@ -535,14 +604,14 @@ paths:
         200:
           description: "Version number retrieved"
     post:
+      # TODO: Do we upgrading by posting to /status/version?
+      # It doesn't seem great, but I haven't thought of something better.
       description: "Change presto version"
-      # TODO: Should this be the upgrade method?
       parameters:
       - $ref: '#/parameters/asyncPriority'
-      - $ref: '#/parameters/stopType'
       responses:
         202:
-          description: "Acknowledged upgrade request"
+          $ref: '#/responses/acknowledged'
 
   /status/start:
     post:
@@ -551,7 +620,7 @@ paths:
       - $ref: '#/parameters/asyncPriority'
       responses:
         202:
-          description: "Acknowledged request to start"
+          $ref: '#/responses/acknowledged'
         400:
           $ref: '#/responses/invalidParameter'
   /status/stop:
@@ -562,7 +631,7 @@ paths:
       - $ref: '#/parameters/stopType'
       responses:
         202:
-          description: "Acknowledged request to stop"
+          $ref: '#/responses/acknowledged'
         400:
           $ref: '#/responses/invalidParameter'
   /status/restart:
@@ -573,11 +642,12 @@ paths:
         - $ref: '#/parameters/stopType'
         responses:
           202:
-            description: "Acknowledged request to restart"
+            $ref: '#/responses/acknowledged'
           400:
             $ref: '#/responses/invalidParameter'
 
-  /logs/{file}: # TODO: do we want more filters?
+  /logs/{file}:
+    # TODO: do we want more log filters?
     parameters:
     - $ref: '#/parameters/fileName'
     - name: to
@@ -602,7 +672,7 @@ paths:
         type: string
         enum: [info, debug, warn, error]
       produces:
-      - text/plain # TODO: should logs be serialized into a more useful format? probably not
+      - text/plain # TODO: should logs be serialized into a more useful format? Probably not.
       responses:
         200:
           description: "Retrieved log"
@@ -621,3 +691,4 @@ paths:
           $ref: '#/responses/invalidParameter'
         404:
           $ref: '#/responses/notFound'
+
