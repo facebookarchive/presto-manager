@@ -20,16 +20,26 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-    
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
+    <properties>
+        <!-- Project settings -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
+        <!-- Children must override project.root to be ${project.parent.basedir} -->
+        <project.root>${project.basedir}</project.root>
+
+        <!-- Dependency versions -->
         <guice.version>4.1.0</guice.version>
         <jetty.version>9.4.6.v20170531</jetty.version>
         <jersey.version>2.26-b06</jersey.version>
+
+        <!-- Plugin settings -->
+        <checkstyle.skip>false</checkstyle.skip>
+        <checkstyle.fail>true</checkstyle.fail>
+        <checkstyle.config>${project.root}/src/checkstyle/checks.xml</checkstyle.config>
+        <shade-plugin.version>3.0.0</shade-plugin.version>
     </properties>
 
     <modules>
@@ -40,9 +50,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-            <version>${guice.version}</version>
+            <groupId>io.swagger</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>1.5.15</version>
         </dependency>
 
         <dependency>
@@ -84,8 +94,51 @@
     </dependencies>
 
     <build>
-        <plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.skife.maven</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>${shade-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
 
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>2.17</version>
+                <executions>
+                    <execution>
+                        <id>checkstyle-exec</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <configLocation>${checkstyle.config}</configLocation>
+                            <skip>${checkstyle.skip}</skip>
+                            <failOnViolation>${checkstyle.fail}</failOnViolation>
+                            <consoleOutput>true</consoleOutput>
+                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                            <sourceDirectories>
+                                <directory>${project.build.sourceDirectory}</directory>
+                            </sourceDirectories>
+                            <testSourceDirectories>
+                                <directory>${project.build.testSourceDirectory}</directory>
+                            </testSourceDirectories>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>7.8.2</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
         </plugins>
     </build>
 </project>

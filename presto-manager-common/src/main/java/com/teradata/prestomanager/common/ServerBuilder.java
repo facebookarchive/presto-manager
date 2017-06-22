@@ -28,7 +28,6 @@ public class ServerBuilder
     {
         URI uri = UriBuilder.fromUri(this.uri).port(port).build();
         return JettyHttpContainerFactory.createServer(uri, resourceConfig, false);
-
     }
 
     /**
