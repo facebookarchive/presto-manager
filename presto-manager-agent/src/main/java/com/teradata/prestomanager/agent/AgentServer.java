@@ -10,6 +10,8 @@ class AgentServer
     private static final int PORT = 8081;
     private static final String URI = "http://localhost/";
 
+    private AgentServer() {}
+
     public static void main(String[] args) throws Exception
     {
         ServerBuilder sb = new ServerBuilder();
