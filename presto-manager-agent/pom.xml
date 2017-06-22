@@ -12,6 +12,8 @@
     <artifactId>presto-manager-agent</artifactId>
 
     <properties>
+        <project.root>${project.parent.basedir}</project.root>
+
         <main-class>com.teradata.prestomanager.agent.AgentServer</main-class>
         <executable-name>AgentServer</executable-name>
     </properties>

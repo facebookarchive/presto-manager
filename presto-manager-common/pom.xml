@@ -11,4 +11,7 @@
     </parent>
     <artifactId>presto-manager-common</artifactId>
 
+    <properties>
+        <project.root>${project.parent.basedir}</project.root>
+    </properties>
 </project>
