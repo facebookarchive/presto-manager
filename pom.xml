@@ -20,16 +20,20 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-    
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
+    <properties>
+        <!-- Project settings -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <guice.version>4.1.0</guice.version>
+
+        <!-- Dependency versions -->
         <jetty.version>9.4.6.v20170531</jetty.version>
         <jersey.version>2.26-b06</jersey.version>
+
+        <!-- Plugin settings -->
+        <shade-plugin.version>3.0.0</shade-plugin.version>
     </properties>
 
     <modules>
@@ -39,12 +43,6 @@
     </modules>
 
     <dependencies>
-        <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-            <version>${guice.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
@@ -84,8 +82,15 @@
     </dependencies>
 
     <build>
-        <plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.skife.maven</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>${shade-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
 
-        </plugins>
     </build>
 </project>
