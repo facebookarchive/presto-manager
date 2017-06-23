@@ -1,3 +1,16 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.teradata.prestomanager.common;
 
 import org.eclipse.jetty.server.Server;
@@ -19,36 +32,27 @@ public class ServerBuilder
 
     public ServerBuilder() {}
 
-    /**
-     * Complete construction of the server
-     *
-     * @return A {@link Server}
-     */
     public Server build()
     {
         URI uri = UriBuilder.fromUri(this.uri).port(port).build();
         return JettyHttpContainerFactory.createServer(uri, resourceConfig, false);
     }
 
-    /**
-     * Set the port the server should run on
-     */
-    public void setPort(int port)
+    public ServerBuilder setPort(int port)
     {
         this.port = port;
+        return this;
     }
 
-    /**
-     * Set the URI of the server
-     */
-    public void setURI(String uri)
+    public ServerBuilder setURI(String uri)
     {
         this.uri = uri;
+        return this;
     }
 
     /**
      * Register a component class with the underlying {@link ResourceConfig}
-     *b
+     *
      * @param componentClass The class to register
      * @return this {@code ServerBuilder}
      */
