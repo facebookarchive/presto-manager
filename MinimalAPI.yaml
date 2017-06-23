@@ -75,7 +75,7 @@ parameters:
     description: "Specify behavior if a conflicting async operation is running"
     type: string
     required: false
-    default: fail
+    default: queue
     enum: [fail, queue, force]
     x-details:
     - "Effect of each value:"
@@ -114,6 +114,7 @@ definitions:
 paths:
   /:
     options:
+      operationId: rootOptions
       summary: "Get API documentation"
       produces:
       - application/json
@@ -129,6 +130,7 @@ paths:
 
   /config:
     get:
+      operationId: getConfig
       summary: "Get available configuration files"
       produces:
       - text/plain # TODO: provide a schema
@@ -143,6 +145,7 @@ paths:
     parameters:
     - $ref: '#/parameters/fileName'
     get:
+      operationId: getConfigFile
       summary: "Get configuration by file"
       produces:
       - application/json
@@ -155,6 +158,7 @@ paths:
         404:
           $ref: '#/responses/notFound'
     post:
+      operationId: setConfigFileByURL
       summary: "Replace this file with the file at the given URL"
       parameters:
       - name: url
@@ -169,6 +173,7 @@ paths:
         409:
           $ref: '#/responses/conflict'
     delete:
+      operationId: deleteConfigFile
       summary: "Delete a configuration file"
       responses:
         202:
@@ -183,6 +188,7 @@ paths:
     - $ref: '#/parameters/fileName'
     - $ref: '#/parameters/property'
     get:
+      operationId: getConfigProperty
       summary: "Get specific configuration property"
       produces:
       - text/plain
@@ -196,6 +202,7 @@ paths:
 
   /connectors:
       get:
+        operationId: getConnectors
         summary: "Get avaiable connector file names"
         produces:
         - text/plain # TODO: provide a schema
@@ -211,6 +218,7 @@ paths:
     parameters:
     - $ref: '#/parameters/fileName'
     get:
+      operationId: getConnectorFile
       summary: "Get connectors by file"
       produces:
       - application/json
@@ -222,6 +230,7 @@ paths:
         404:
           $ref: '#/responses/notFound'
     post:
+      operationId: setConnectorFileByURL
       summary: "Replace this file with the file at the given URL"
       parameters:
       - name: url
@@ -236,6 +245,7 @@ paths:
         409:
           $ref: '#/responses/conflict'
     delete:
+      operationId: deleteConnectorFile
       summary: "Delete a connector file"
       responses:
         202:
@@ -250,6 +260,7 @@ paths:
     - $ref: '#/parameters/fileName'
     - $ref: '#/parameters/property'
     get:
+      operationId: getConnectorProperty
       summary: "Get specific connector property"
       produces:
       - text/plain
@@ -263,6 +274,7 @@ paths:
 
   /status:
     get:
+      operationId: getStatus
       summary: "Get status of the Presto instance"
       parameters:
       - name: params
@@ -284,9 +296,10 @@ paths:
               type: string
 
   # TODO: Add more /status information
-  
+
   /status/version:
     get:
+      operationId: getVersion
       summary: "Get current Presto version"
       produces:
       - text/plain
@@ -296,6 +309,7 @@ paths:
     post:
       # TODO: Do we upgrade by posting to /status/version?
       # It doesn't seem great, but I haven't thought of something better.
+      operationId:
       description: "Change presto version"
       parameters:
       - $ref: '#/parameters/asyncPriority'
@@ -305,6 +319,7 @@ paths:
 
   /status/start:
     post:
+      operationId: startPresto
       summary: "Start Presto"
       parameters:
       - $ref: '#/parameters/asyncPriority'
@@ -315,6 +330,7 @@ paths:
           $ref: '#/responses/invalidParameter'
   /status/stop:
     post:
+      operationId: stopPresto
       summary: "Stop Presto"
       parameters:
       - $ref: '#/parameters/asyncPriority'
@@ -326,6 +342,7 @@ paths:
           $ref: '#/responses/invalidParameter'
   /status/restart:
       post:
+        operationId: restartPresto
         summary: "Restart Presto"
         parameters:
         - $ref: '#/parameters/asyncPriority'
@@ -347,6 +364,7 @@ paths:
       type: string
       format: dateTime
     get:
+      operationId: getLog
       summary: "Get Presto log file"
       parameters:
       - name: from
@@ -371,6 +389,7 @@ paths:
         404:
           $ref: '#/responses/notFound'
     delete:
+      operationId: deleteLog
       summary: "Delete Presto logs"
       produces:
       - text/plain
@@ -381,4 +400,3 @@ paths:
           $ref: '#/responses/invalidParameter'
         404:
           $ref: '#/responses/notFound'
-
