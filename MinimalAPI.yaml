@@ -1,0 +1,384 @@
+# Minimal API Specification
+#
+# This details the API exposed by the agents in the MVP only.
+#
+# This may not be complete, particularly the response schemas
+# for the various GET operations.
+#
+# TODO:
+# Add operationId to all operations
+# Complete all schemas
+# Make sure responses are correct and not redundant
+# See TODOs in file body
+#
+#
+# For an explanation of Swagger schema extensions see the
+# x-extension-definitions property.
+#
+
+# The CAPITALIZED key words "MUST", "MUST NOT", "REQUIRED",
+# "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",
+# "MAY", and "OPTIONAL" in this document are to be interpreted
+# as described in RFC 2119.
+# RFC 2119 is present for API development, and may be removed in the future.
+
+swagger: '2.0'
+info:
+  title: Presto Manager API
+  description: 'Presto Manager API, as exposed by an Agent'
+  version: 0.0.2
+host: localhost:0000
+basePath: /v0
+schemes:
+- https
+
+# List of Swagger Schema extensions.
+x-extension-definitions:
+- name: x-note
+  description: API design notes.
+  type: string
+- name: x-details
+  description: Object-structured description.
+  type: object
+
+parameters:
+  fileName:
+    in: path
+    name: file
+    description: "The name of a file"
+    required: true
+    type: string
+  pathName:
+    in: path
+    name: name
+    description: "The name of an item"
+    required: true
+    type: string
+  property:
+    in: path
+    name: property
+    description: "A specific property"
+    required: true
+    type: string
+  stopType:
+    in: query
+    name: type
+    description: "What type of stop command to issue"
+    required: false
+    type: string
+    default: graceful
+    enum: [graceful, terminate, kill]
+    x-note: "MUST be accompanied by #/responses/invalidParameter"
+  asyncPriority:
+    in: query
+    name: priority
+    description: "Specify behavior if a conflicting async operation is running"
+    type: string
+    required: false
+    default: fail
+    enum: [fail, queue, force]
+    x-details:
+    - "Effect of each value:"
+    - fail: "This operation fails"
+      queue: "This operation is added to a queue to run after the previous operations"
+      force: "This operation begins immediately; the previous operation is stopped"
+    x-note: "MUST be accompanied by #/responses/invalidParameter"
+
+responses:
+  agentTimeout: # send as 504 from Controller if the agent times out
+    description: "An agent did not return fast enough"
+  deleted:
+    description: "Resource deleted successfully"
+  notFound:
+    description: "Resource not found"
+  invalidParameter:
+    description: "Invalid parameters"
+    schema:
+      type: string
+  acknowledged:
+    description: "Acknowledged request and queued operation"
+  conflict:
+    description: "Request conflicts with current state"
+
+definitions:
+  properties:
+    description: "A mapping of property names to values"
+    type: object
+    additionalProperties:
+      type: string
+  propertiesFile:
+    description: "A Java properties file"
+  singleURI:
+    description: "A single line containing a single URI and no comments."
+
+paths:
+  /:
+    options:
+      summary: "Get API documentation"
+      produces:
+      - application/json
+      responses:
+       200:
+        description: "Retrieved API documentation"
+        x-note: This will return this document, possible slightly modified.
+        headers:
+          Allow:
+            type: string
+            default: OPTIONS
+            pattern: ^OPTIONS$
+
+  /config:
+    get:
+      summary: "Get available configuration files"
+      produces:
+      - text/plain # TODO: provide a schema
+      responses:
+        200:
+          description: "Retrieved configuration"
+          schema:
+            description: "A list of valid config file names, one per line"
+            type: string
+
+  /config/{file}:
+    parameters:
+    - $ref: '#/parameters/fileName'
+    get:
+      summary: "Get configuration by file"
+      produces:
+      - application/json
+      # TODO: Could use Accept header to get in .properties format
+      responses:
+        200:
+          description: "Retrieved file"
+          schema:
+            $ref: '#/definitions/properties'
+        404:
+          $ref: '#/responses/notFound'
+    post:
+      summary: "Replace this file with the file at the given URL"
+      parameters:
+      - name: url
+        in: body
+        required: true
+        description: "A URL at which to find the new file"
+        schema:
+          $ref: '#/definitions/singleURI'
+      responses:
+        202:
+          $ref: '#/responses/acknowledged'
+        409:
+          $ref: '#/responses/conflict'
+    delete:
+      summary: "Delete a configuration file"
+      responses:
+        202:
+          $ref: '#/responses/acknowledged'
+        204:
+          $ref: '#/responses/deleted'
+        404:
+          $ref: '#/responses/notFound'
+
+  /config/{file}/{property}:
+    parameters:
+    - $ref: '#/parameters/fileName'
+    - $ref: '#/parameters/property'
+    get:
+      summary: "Get specific configuration property"
+      produces:
+      - text/plain
+      responses:
+        200:
+          description: "Retrieved property"
+          schema:
+            type: string
+        404:
+          $ref: '#/responses/notFound'
+
+  /connectors:
+      get:
+        summary: "Get avaiable connector file names"
+        produces:
+        - text/plain # TODO: provide a schema
+        responses:
+          200:
+            description: "Retrieved configuration"
+            schema:
+              description: "A list of valid connector file names, one per line"
+              type: string
+
+  /connectors/{file}:
+    # TODO: Connectors may need more advanced management
+    parameters:
+    - $ref: '#/parameters/fileName'
+    get:
+      summary: "Get connectors by file"
+      produces:
+      - application/json
+      responses:
+        200:
+          description: "Retrieved connector configuration"
+          schema:
+             $ref: '#/definitions/properties'
+        404:
+          $ref: '#/responses/notFound'
+    post:
+      summary: "Replace this file with the file at the given URL"
+      parameters:
+      - name: url
+        in: body
+        required: true
+        description: "A URL at which to find the new file"
+        schema:
+          $ref: '#/definitions/singleURI'
+      responses:
+        202:
+          $ref: '#/responses/acknowledged'
+        409:
+          $ref: '#/responses/conflict'
+    delete:
+      summary: "Delete a connector file"
+      responses:
+        202:
+          $ref: '#/responses/acknowledged'
+        204:
+          $ref: '#/responses/deleted'
+        404:
+          $ref: '#/responses/notFound'
+
+  /connectors/{file}/{property}:
+    parameters:
+    - $ref: '#/parameters/fileName'
+    - $ref: '#/parameters/property'
+    get:
+      summary: "Get specific connector property"
+      produces:
+      - text/plain
+      responses:
+        200:
+          description: "Retrieved connector property"
+          schema:
+            type: string
+        404:
+          $ref: '#/responses/notFound'
+
+  /status:
+    get:
+      summary: "Get status of the Presto instance"
+      parameters:
+      - name: params
+        in: query
+        description: "Specific information to retrieve"
+        required: false
+        type: array
+        items:
+          type: string
+        x-details: 'Example: /status?params=id,version,os'
+      produces:
+      - application/json
+      responses:
+        200:
+          description: "Retrieved Presto status"
+          schema: # TODO: Add proper status schema
+            type: object
+            additionalProperties:
+              type: string
+
+  # TODO: Add more /status information
+  
+  /status/version:
+    get:
+      summary: "Get current Presto version"
+      produces:
+      - text/plain
+      responses:
+        200:
+          description: "Version number retrieved"
+    post:
+      # TODO: Do we upgrade by posting to /status/version?
+      # It doesn't seem great, but I haven't thought of something better.
+      description: "Change presto version"
+      parameters:
+      - $ref: '#/parameters/asyncPriority'
+      responses:
+        202:
+          $ref: '#/responses/acknowledged'
+
+  /status/start:
+    post:
+      summary: "Start Presto"
+      parameters:
+      - $ref: '#/parameters/asyncPriority'
+      responses:
+        202:
+          $ref: '#/responses/acknowledged'
+        400:
+          $ref: '#/responses/invalidParameter'
+  /status/stop:
+    post:
+      summary: "Stop Presto"
+      parameters:
+      - $ref: '#/parameters/asyncPriority'
+      - $ref: '#/parameters/stopType'
+      responses:
+        202:
+          $ref: '#/responses/acknowledged'
+        400:
+          $ref: '#/responses/invalidParameter'
+  /status/restart:
+      post:
+        summary: "Restart Presto"
+        parameters:
+        - $ref: '#/parameters/asyncPriority'
+        - $ref: '#/parameters/stopType'
+        responses:
+          202:
+            $ref: '#/responses/acknowledged'
+          400:
+            $ref: '#/responses/invalidParameter'
+
+  /logs/{file}:
+    # TODO: do we want more log filters?
+    parameters:
+    - $ref: '#/parameters/fileName'
+    - name: to
+      in: query
+      description: "Ignore logs after this date/time"
+      required: false
+      type: string
+      format: dateTime
+    get:
+      summary: "Get Presto log file"
+      parameters:
+      - name: from
+        in: query
+        description: "Ignore logs before this date/time"
+        required: false
+        type: string
+        format: dateTime
+      - name: level
+        in: query
+        description: "Restrict to specific log level"
+        required: false
+        type: string
+        enum: [info, debug, warn, error]
+      produces:
+      - text/plain # TODO: should logs be serialized into a more useful format? Probably not.
+      responses:
+        200:
+          description: "Retrieved log"
+        400:
+          $ref: '#/responses/invalidParameter'
+        404:
+          $ref: '#/responses/notFound'
+    delete:
+      summary: "Delete Presto logs"
+      produces:
+      - text/plain
+      responses:
+        204:
+          description: "Deleted logs"
+        400:
+          $ref: '#/responses/invalidParameter'
+        404:
+          $ref: '#/responses/notFound'
+

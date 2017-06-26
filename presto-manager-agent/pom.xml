@@ -9,10 +9,11 @@
         <artifactId>presto-manager</artifactId>
         <version>0.1-SNAPSHOT</version>
     </parent>
-
     <artifactId>presto-manager-agent</artifactId>
 
     <properties>
+        <project.root>${project.parent.basedir}</project.root>
+
         <main-class>com.teradata.prestomanager.agent.AgentServer</main-class>
         <executable-name>AgentServer</executable-name>
     </properties>
@@ -30,7 +31,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>${shade-plugin.version}</version>
                 <executions>
                     <execution>
                         <phase>package</phase>

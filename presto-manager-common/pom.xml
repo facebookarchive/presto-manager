@@ -9,7 +9,9 @@
         <artifactId>presto-manager</artifactId>
         <version>0.1-SNAPSHOT</version>
     </parent>
-
     <artifactId>presto-manager-common</artifactId>
 
+    <properties>
+        <project.root>${project.parent.basedir}</project.root>
+    </properties>
 </project>
