@@ -13,7 +13,7 @@
  */
 package com.teradata.prestomanager.agent;
 
-import com.teradata.prestomanager.agent.api.ConfigApi;
+import com.teradata.prestomanager.agent.api.ConfigAPI;
 import com.teradata.prestomanager.common.ServerBuilder;
 import org.eclipse.jetty.server.Server;
 
@@ -31,7 +31,7 @@ class AgentServer
         Server server = new ServerBuilder()
                 .setURI(URI)
                 .setPort(PORT)
-                .registerComponent(ConfigApi.class)
+                .registerComponent(ConfigAPI.class)
                 .build();
 
         try {
