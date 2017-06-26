@@ -13,6 +13,7 @@
  */
 package com.teradata.prestomanager.agent.api;
 
+import com.teradata.prestomanager.agent.APIFileHandler;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -28,24 +29,27 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 
-import static javax.ws.rs.core.Response.Status;
+import java.nio.file.Paths;
 
+//TODO: Add logger
 @Path("/config")
 @Api(description = "the config API")
 @javax.annotation.Generated(
         value = "io.swagger.codegen.languages.JavaJAXRSSpecServerCodegen",
         date = "2017-06-23T09:53:13.549-04:00")
 @Singleton
-public final class ConfigApi
+public final class ConfigAPI
 {
+    private static final APIFileHandler apiFileHandler = new APIFileHandler(Paths.get("../presto/presto-main/etc"));
+
     @GET
     @Produces({"text/plain"})
     @ApiOperation(value = "Get available configuration files")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved configuration", response = String.class)})
-    public Response getConfig()
+    public synchronized Response getConfig()
     {
-        return Response.status(Status.NOT_IMPLEMENTED).build();
+        return apiFileHandler.getFileNameList();
     }
 
     @GET
@@ -55,10 +59,10 @@ public final class ConfigApi
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved file", response = String.class),
             @ApiResponse(code = 404, message = "Resource not found")})
-    public Response getConfigFile(
+    public synchronized Response getConfigFile(
             @PathParam("file") @ApiParam("The name of a file") String file)
     {
-        return Response.status(Status.NOT_IMPLEMENTED).build();
+        return apiFileHandler.getFile(file);
     }
 
     @POST
@@ -67,11 +71,11 @@ public final class ConfigApi
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request"),
             @ApiResponse(code = 409, message = "Request conflicts with current state")})
-    public Response setConfigFileByURL(
+    public synchronized Response setConfigFileByURL(
             @PathParam("file") @ApiParam("The name of a file") String file,
             String url)
     {
-        return Response.status(Status.NOT_IMPLEMENTED).build();
+        return apiFileHandler.replaceFileFromURL(file, url);
     }
 
     @DELETE
@@ -81,10 +85,10 @@ public final class ConfigApi
             @ApiResponse(code = 202, message = "Acknowledged request"),
             @ApiResponse(code = 404, message = "Resource not found"),
             @ApiResponse(code = 409, message = "Request conflicts with current state")})
-    public Response deleteConfigFile(
+    public synchronized Response deleteConfigFile(
             @PathParam("file") @ApiParam("The name of a file") String file)
     {
-        return Response.status(Status.NOT_IMPLEMENTED).build();
+        return apiFileHandler.deleteFile(file);
     }
 
     @GET
@@ -94,10 +98,10 @@ public final class ConfigApi
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved property", response = String.class),
             @ApiResponse(code = 404, message = "Resource not found")})
-    public Response getConfigProperty(
+    public synchronized Response getConfigProperty(
             @PathParam("file") @ApiParam("The name of a file") String file,
             @PathParam("property") @ApiParam("A specific property") String property)
     {
-        return Response.status(Status.NOT_IMPLEMENTED).build();
+        return apiFileHandler.getFileProperty(file, property);
     }
 }
