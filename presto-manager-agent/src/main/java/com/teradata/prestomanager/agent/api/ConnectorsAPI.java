@@ -19,6 +19,8 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.inject.Singleton;
 import javax.ws.rs.DELETE;
@@ -40,6 +42,7 @@ import java.nio.file.Paths;
 public final class ConnectorsAPI
 {
     private static final APIFileHandler apiFileHandler = new APIFileHandler(Paths.get("../presto/presto-main/etc/catalogs"));
+    private static final Logger LOGGER = LogManager.getLogger(ConnectorsAPI.class);
 
     @GET
     @Produces({"text/plain"})
@@ -48,6 +51,7 @@ public final class ConnectorsAPI
             @ApiResponse(code = 200, message = "Retrieved configuration", response = String.class)})
     public synchronized Response getConnectors()
     {
+        LOGGER.debug("GET /connectors");
         return apiFileHandler.getFileNameList();
     }
 
@@ -61,6 +65,7 @@ public final class ConnectorsAPI
     public synchronized Response getConnectorFile(
             @PathParam("file") @ApiParam("The name of a file") String file)
     {
+        LOGGER.debug("GET /connectors/{}", file);
         return apiFileHandler.getFile(file);
     }
 
@@ -74,6 +79,7 @@ public final class ConnectorsAPI
             @PathParam("file") @ApiParam("The name of a file") String file,
             String url)
     {
+        LOGGER.debug("POST /connectors/{}", file);
         return apiFileHandler.replaceFileFromURL(file, url);
     }
 
@@ -87,6 +93,7 @@ public final class ConnectorsAPI
     public synchronized Response deleteConnectorFile(
             @PathParam("file") @ApiParam("The name of a file") String file)
     {
+        LOGGER.debug("DELETE /connectors/{}", file);
         return apiFileHandler.deleteFile(file);
     }
 
@@ -101,6 +108,7 @@ public final class ConnectorsAPI
             @PathParam("file") @ApiParam("The name of a file") String file,
             @PathParam("property") @ApiParam("A specific property") String property)
     {
+        LOGGER.debug("GET /connectors/{}/{}", file, property);
         return apiFileHandler.getFileProperty(file, property);
     }
 }
