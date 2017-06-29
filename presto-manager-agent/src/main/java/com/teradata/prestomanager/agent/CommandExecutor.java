@@ -17,7 +17,6 @@ import java.util.concurrent.TimeUnit;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
 
 // TODO: Add logger
 public final class CommandExecutor
