@@ -15,7 +15,6 @@ package com.teradata.prestomanager.agent;
 
 import static com.teradata.prestomanager.agent.CommandExecutor.executeCommand;
 import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
 
 //  TODO: Add Logger
 public final class PrestoInstaller
