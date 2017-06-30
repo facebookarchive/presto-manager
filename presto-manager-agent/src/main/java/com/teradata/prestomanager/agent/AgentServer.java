@@ -15,6 +15,7 @@ package com.teradata.prestomanager.agent;
 
 import com.teradata.prestomanager.agent.api.ConfigAPI;
 import com.teradata.prestomanager.agent.api.ConnectorsAPI;
+import com.teradata.prestomanager.agent.api.ControlAPI;
 import com.teradata.prestomanager.agent.api.LogsAPI;
 import com.teradata.prestomanager.agent.api.PackageAPI;
 import com.teradata.prestomanager.common.ServerBuilder;
@@ -38,6 +39,7 @@ class AgentServer
                 .registerComponent(ConnectorsAPI.class)
                 .registerComponent(LogsAPI.class)
                 .registerComponent(PackageAPI.class)
+                .registerComponent(ControlAPI.class)
                 .build();
 
         try {

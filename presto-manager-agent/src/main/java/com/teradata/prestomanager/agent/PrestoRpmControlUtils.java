@@ -1,0 +1,259 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.teradata.prestomanager.agent;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.glassfish.jersey.client.JerseyClient;
+
+import javax.ws.rs.ProcessingException;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import static com.teradata.prestomanager.agent.AgentFileUtils.getFileProperty;
+import static com.teradata.prestomanager.agent.CommandExecutor.executeCommand;
+import static java.lang.String.format;
+import static javax.ws.rs.client.Entity.entity;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static javax.ws.rs.core.Response.Status.ACCEPTED;
+import static javax.ws.rs.core.Response.Status.CONFLICT;
+import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.OK;
+import static javax.ws.rs.core.UriBuilder.fromUri;
+import static org.glassfish.jersey.client.JerseyClientBuilder.createClient;
+
+public final class PrestoRpmControlUtils
+{
+    private static final Logger LOGGER = LogManager.getLogger(PrestoRpmControlUtils.class);
+    private static final JerseyClient JERSEY_CLIENT = createClient();
+    private static final String LAUNCHER_SCRIPT = "/usr/lib/presto/bin/launcher";
+    private static final Path PRESTO_CONFIG_FILE = Paths.get("/etc/presto/config.properties");
+    private static final Gson GSON = new Gson();
+    private static final int SUBPROCESS_TIMEOUT = 120;
+
+    private PrestoRpmControlUtils() {}
+
+    public static Response startUsingRpm()
+    {
+        try {
+            if (!isInstalled()) {
+                LOGGER.error("Presto is not installed");
+                return Response.status(NOT_FOUND).entity("Presto is not installed").build();
+            }
+        }
+        catch (PrestoManagerException e) {
+            LOGGER.error(e.getMessage(), e.getCause());
+            return Response.status(INTERNAL_SERVER_ERROR).build();
+        }
+        new Thread(() -> {
+            try {
+                int startPresto = executeCommand(SUBPROCESS_TIMEOUT, "service", "presto", "start");
+                if (startPresto != 0) {
+                    LOGGER.error("Failed to start presto");
+                }
+            }
+            catch (PrestoManagerException e) {
+                LOGGER.error(e.getMessage(), e.getCause());
+            }
+        }).start();
+        return Response.status(ACCEPTED).entity("Presto is being started. " +
+                "Please check back later using the status api to make sure that Presto has successfully started.").build();
+    }
+
+    public static Response stopUsingRpm(StopType stopType)
+    {
+        try {
+            if (!isInstalled()) {
+                LOGGER.error("Presto is not installed");
+                return Response.status(NOT_FOUND).build();
+            }
+            if (!isRunning()) {
+                LOGGER.info("Presto is not running");
+                return Response.status(OK).build();
+            }
+            switch (stopType) {
+                case TERMINATE:
+                    terminatePresto();
+                    break;
+                case KILL:
+                    killPresto();
+                    break;
+                case GRACEFUL:
+                    if (isCoordinator()) {
+                        LOGGER.error("Coordinator can't be gracefully stopped.");
+                        return Response.status(CONFLICT).build();
+                    }
+                    gracefulStop();
+                    break;
+                default:
+                    LOGGER.error("Invalid stop type: {}", stopType);
+                    return Response.status(INTERNAL_SERVER_ERROR).build();
+            }
+        }
+        catch (PrestoManagerException e) {
+            LOGGER.error(e.getMessage(), e.getCause());
+            return Response.status(INTERNAL_SERVER_ERROR).build();
+        }
+        return Response.status(OK).build();
+    }
+
+    public static Response restartUsingRpm()
+    {
+        try {
+            if (!isInstalled()) {
+                LOGGER.error("Presto is not installed");
+                return Response.status(NOT_FOUND).build();
+            }
+            int prestoRestart = executeCommand(SUBPROCESS_TIMEOUT, "service", "presto", "restart");
+            if (prestoRestart != 0) {
+                throw new PrestoManagerException("Failed to restart presto", prestoRestart);
+            }
+        }
+        catch (PrestoManagerException e) {
+            LOGGER.error(e.getMessage(), e.getCause());
+            return Response.status(INTERNAL_SERVER_ERROR).build();
+        }
+        return Response.status(OK).build();
+    }
+
+    /**
+     * The status api can be used to ascertain whether presto is installed and running.
+     * If Presto is running, this method would return a JSON file containing the following details
+     * nodeVersion : Presto version installed in the node
+     * environment : The name of the environment
+     * coordinator : Specifies whether the current node functions as a coordinator
+     * state : The state of the node. ACTIVE (or) SHUTTING_DOWN
+     *
+     * @return Response containing node status
+     */
+    public static Response statusUsingRpm()
+    {
+        try {
+            if (!isInstalled()) {
+                LOGGER.info("Presto is not installed");
+                return Response.status(OK).entity(GSON.toJson("Presto is not installed"))
+                        .type(APPLICATION_JSON).build();
+            }
+        }
+        catch (PrestoManagerException e) {
+            LOGGER.error(e.getMessage(), e.getCause());
+            return Response.status(INTERNAL_SERVER_ERROR).build();
+        }
+        try {
+            String prestoPort = getPrestoPort();
+            UriBuilder uriBuilder = fromUri(format("http://localhost:%s", prestoPort)).path("/v1/info");
+            Response prestoInfo = JERSEY_CLIENT.target(uriBuilder.build()).request(APPLICATION_JSON).buildGet().invoke();
+            Response prestoState = JERSEY_CLIENT.target(uriBuilder.path("/state").build())
+                    .request(APPLICATION_JSON).buildGet().invoke();
+            JsonParser jsonParser = new JsonParser();
+            JsonObject prestoStatus = jsonParser.parse(prestoInfo.readEntity(String.class)).getAsJsonObject();
+            prestoStatus.addProperty("state", jsonParser.parse(prestoState.readEntity(String.class)).getAsString());
+            return Response.status(OK).entity(prestoStatus.toString()).type(APPLICATION_JSON).build();
+        }
+        catch (ProcessingException e) {
+            LOGGER.info("Presto is not running");
+            return Response.status(OK).entity(GSON.toJson("Presto is installed but not running"))
+                    .type(APPLICATION_JSON).build();
+        }
+        catch (IOException e) {
+            LOGGER.error("Failed to get status.", e);
+            return Response.status(INTERNAL_SERVER_ERROR).entity(GSON.toJson("Failed to get status"))
+                    .type(APPLICATION_JSON).build();
+        }
+    }
+
+    private static boolean isInstalled()
+            throws PrestoManagerException
+    {
+        return executeCommand("rpm", "-q", "presto-server-rpm") == 0;
+    }
+
+    private static boolean isRunning()
+            throws PrestoManagerException
+    {
+        return isInstalled() && executeCommand("service", "presto", "status") == 0;
+    }
+
+    private static void terminatePresto()
+            throws PrestoManagerException
+    {
+        int prestoTerminate = executeCommand("service", "presto", "stop");
+        if (prestoTerminate != 0) {
+            throw new PrestoManagerException("Failed to stop presto", prestoTerminate);
+        }
+    }
+
+    private static void killPresto()
+            throws PrestoManagerException
+    {
+        executeCommand("sudo", LAUNCHER_SCRIPT, "kill");
+        int prestoKill = executeCommand("service", "presto", "status");
+        if (prestoKill != 3) {
+            throw new PrestoManagerException("Failed to stop presto", prestoKill);
+        }
+    }
+
+    private static void gracefulStop()
+            throws PrestoManagerException
+    {
+        try {
+            String prestoPort = getPrestoPort();
+            UriBuilder uriBuilder = fromUri(format("http://localhost:%s", prestoPort)).path("/v1/info/state");
+            Response response = JERSEY_CLIENT.target(uriBuilder.build()).request(TEXT_PLAIN)
+                    .buildPut(entity(GSON.toJson("SHUTTING_DOWN"), APPLICATION_JSON)).invoke();
+            if (response.getStatus() != 200) {
+                throw new PrestoManagerException("Failed to stop presto gracefully");
+            }
+        }
+        catch (ProcessingException e) {
+            LOGGER.info("Presto is not running", e);
+        }
+        catch (IOException e) {
+            throw new PrestoManagerException("Failed to get Presto port number.", e);
+        }
+    }
+
+    private static String getPrestoPort()
+            throws IOException
+    {
+        return getFileProperty(PRESTO_CONFIG_FILE, "http-server.http.port");
+    }
+
+    private static boolean isCoordinator()
+            throws PrestoManagerException
+    {
+        try {
+            String prestoPort = getPrestoPort();
+            UriBuilder uriBuilder = fromUri(format("http://localhost:%s", prestoPort)).path("/v1/info/coordinator");
+            Response isCoordinator = JERSEY_CLIENT.target(uriBuilder.build()).request(TEXT_PLAIN).buildGet().invoke();
+            return isCoordinator.getStatus() == 200;
+        }
+        catch (ProcessingException e) {
+            LOGGER.info("Presto is not running", e);
+        }
+        catch (IOException e) {
+            throw new PrestoManagerException("Failed to get Presto port number.", e);
+        }
+        return false;
+    }
+}
