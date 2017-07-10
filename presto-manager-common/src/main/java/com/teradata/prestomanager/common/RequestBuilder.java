@@ -33,7 +33,8 @@ public class RequestBuilder
     private Object headerValue;
     private static JerseyClient jerseyClient = createClient();
 
-    private RequestBuilder(URI path) {
+    private RequestBuilder(URI path)
+    {
         this.path = path;
     }
 
