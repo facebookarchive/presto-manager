@@ -67,17 +67,14 @@ public final class PrestoInstaller
         }
     }
 
-    private static void installUsingRpm(String pathToRpm, boolean disableDependencyChecking)
+    private static void installUsingRpm(String pathToRpm, boolean checkDependencies)
             throws PrestoManagerException
     {
         String checkRpm = format("rpm -K --nosignature %s", pathToRpm);
         if (executeCommand(checkRpm) != 0) {
             throw new PrestoManagerException("Corrupted RPM");
         }
-        String nodeps = "";
-        if (disableDependencyChecking) {
-            nodeps = "--nodeps";
-        }
+        String nodeps = checkDependencies ? "" : "--nodeps";
         String installRpm = format("sudo rpm -i %s %s", nodeps, pathToRpm);
         if (executeCommand(installRpm) != 0) {
             throw new PrestoManagerException("Failed to install presto");
