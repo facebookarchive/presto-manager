@@ -48,7 +48,7 @@ public class PrestoUninstaller
         }
     }
 
-    private static void uninstallUsingRpm(String packageName, boolean disableDependencyChecking, boolean ignoreErrors)
+    private static void uninstallUsingRpm(String packageName, boolean checkDependencies, boolean ignoreErrors)
             throws PrestoManagerException
     {
         if (executeCommand(format("sudo rpm -q %s", packageName)) != 0) {
@@ -63,10 +63,7 @@ public class PrestoUninstaller
             }
         }
         else {
-            String nodeps = "";
-            if (disableDependencyChecking) {
-                nodeps = "--nodeps";
-            }
+            String nodeps = checkDependencies ? "" : "--nodeps";
             String uninstallPackage = format("sudo rpm -e %s %s", nodeps, packageName);
             if (executeCommand(uninstallPackage) != 0) {
                 throw new PrestoManagerException(format("Failed to uninstall package %s", packageName));

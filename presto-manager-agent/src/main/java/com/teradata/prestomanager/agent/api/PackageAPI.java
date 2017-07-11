@@ -19,6 +19,7 @@ import com.teradata.prestomanager.agent.PrestoUninstaller;
 import com.teradata.prestomanager.agent.PrestoUpgrader;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
@@ -57,8 +58,8 @@ public final class PackageAPI
             @ApiResponse(code = 202, message = "Acknowledged request"),
             @ApiResponse(code = 400, message = "Bad package format or Invalid url")
     })
-    public synchronized Response install(@NotNull String locationToFetchPackage,
-            @QueryParam("disableDependencyChecking") @DefaultValue("false") boolean disableDependencyChecking)
+    public synchronized Response install(@NotNull @ApiParam("Url to fetch package") String locationToFetchPackage,
+            @QueryParam("checkDependencies") @DefaultValue("true") @ApiParam("If false, disables dependency checking") boolean checkDependencies)
     {
         try {
             installedPackageType = PackageType.valueOf(getFileExtension(locationToFetchPackage).toUpperCase());
@@ -68,7 +69,7 @@ public final class PackageAPI
         }
         try {
             URL url = new URL(locationToFetchPackage);
-            new Thread(new PrestoAsynchronousCommand(new PrestoInstaller(installedPackageType, url, disableDependencyChecking))).start();
+            new Thread(new PrestoAsynchronousCommand(new PrestoInstaller(installedPackageType, url, checkDependencies))).start();
         }
         catch (MalformedURLException e) {
             return Response.status(BAD_REQUEST).entity(text("Invalid url")).build();
@@ -84,8 +85,8 @@ public final class PackageAPI
             @ApiResponse(code = 202, message = "Acknowledged request"),
             @ApiResponse(code = 400, message = "Bad package format or Invalid url")
     })
-    public synchronized Response upgrade(@QueryParam("disableDependencyChecking") @DefaultValue("false") boolean disableDependencyChecking,
-            @NotNull String locationToFetchPackage)
+    public synchronized Response upgrade(@NotNull @ApiParam("Url to fetch package") String locationToFetchPackage,
+            @QueryParam("checkDependencies") @DefaultValue("true") @ApiParam("If false, disables dependency checking") boolean checkDependencies)
     {
         try {
             if (installedPackageType != PackageType.valueOf(getFileExtension(locationToFetchPackage).toUpperCase())) {
@@ -97,7 +98,7 @@ public final class PackageAPI
         }
         try {
             final URL url = new URL(locationToFetchPackage);
-            new Thread(new PrestoAsynchronousCommand(new PrestoUpgrader(installedPackageType, url, disableDependencyChecking))).start();
+            new Thread(new PrestoAsynchronousCommand(new PrestoUpgrader(installedPackageType, url, checkDependencies))).start();
         }
         catch (MalformedURLException e) {
             return Response.status(BAD_REQUEST).entity(text("Invalid url")).build();
@@ -110,11 +111,12 @@ public final class PackageAPI
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request")
     })
-    public synchronized Response uninstall(@QueryParam("disableDependencyChecking") @DefaultValue("false") boolean disableDependencyChecking,
-            @QueryParam("ignoreErrors") @DefaultValue("false") boolean ignoreErrors)
+    public synchronized Response uninstall(
+            @QueryParam("checkDependencies") @DefaultValue("true") @ApiParam("If false, disables dependency checking") boolean checkDependencies,
+            @QueryParam("ignoreErrors") @DefaultValue("false") @ApiParam("If true, warnings are ignored during uninstall") boolean ignoreErrors)
     {
-        new Thread(new PrestoAsynchronousCommand(new PrestoUninstaller(installedPackageType, disableDependencyChecking, ignoreErrors))).start();
-        return Response.status(ACCEPTED).build();
+        new Thread(new PrestoAsynchronousCommand(new PrestoUninstaller(installedPackageType, checkDependencies, ignoreErrors))).start();
+        return Response.status(ACCEPTED).entity(text("Presto is being uninstalled")).build();
     }
 
     public enum PackageType
