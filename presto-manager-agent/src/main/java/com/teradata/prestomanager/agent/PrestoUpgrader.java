@@ -25,7 +25,7 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.io.FileUtils.copyURLToFile;
 
-public final class PrestoInstaller
+public class PrestoUpgrader
         implements PrestoCommand
 {
     private static final int CONNECTION_TIMEOUT = 1000000;
@@ -35,7 +35,7 @@ public final class PrestoInstaller
     private final URL urlToFetchPackage;
     private final boolean disableDependencyChecking;
 
-    public PrestoInstaller(PackageType packageType, URL urlToFetchPackage, boolean disableDependencyChecking)
+    public PrestoUpgrader(PackageType packageType, URL urlToFetchPackage, boolean disableDependencyChecking)
     {
         this.packageType = requireNonNull(packageType);
         this.urlToFetchPackage = requireNonNull(urlToFetchPackage);
@@ -47,6 +47,9 @@ public final class PrestoInstaller
     {
         switch (packageType) {
             case RPM:
+                if (executeCommand("service presto status") == 0) {
+                    throw new PrestoManagerException("Presto is running");
+                }
                 File tempFile;
                 try {
                     tempFile = createTempFile("presto", ".rpm");
@@ -55,22 +58,22 @@ public final class PrestoInstaller
                 catch (IOException e) {
                     throw new PrestoManagerException(format("Failed to download file from url %s", urlToFetchPackage), e);
                 }
-                installUsingRpm(tempFile.toString(), disableDependencyChecking);
+                upgradeUsingRpm(tempFile.toString(), disableDependencyChecking);
                 tempFile.delete();
                 break;
             case TARBALL:
                 // TODO: Add tarball installation
-                throw new UnsupportedOperationException("Tarball installation is not supported");
+                throw new UnsupportedOperationException("Tarball upgrade is not supported");
             default:
                 // TODO: Add to logger
                 throw new IllegalArgumentException(format("Unsupported package type %s", packageType));
         }
     }
 
-    private static void installUsingRpm(String pathToRpm, boolean disableDependencyChecking)
+    private static void upgradeUsingRpm(String pathToRpm, boolean disableDependencyChecking)
             throws PrestoManagerException
     {
-        String checkRpm = format("rpm -K --nosignature %s", pathToRpm);
+        String checkRpm = format("rpm -Kv --nosignature %s", pathToRpm);
         if (executeCommand(checkRpm) != 0) {
             throw new PrestoManagerException("Corrupted RPM");
         }
@@ -78,9 +81,9 @@ public final class PrestoInstaller
         if (disableDependencyChecking) {
             nodeps = "--nodeps";
         }
-        String installRpm = format("sudo rpm -i %s %s", nodeps, pathToRpm);
-        if (executeCommand(installRpm) != 0) {
-            throw new PrestoManagerException("Failed to install presto");
+        String upgradeRpm = format("sudo rpm -U %s %s", nodeps, pathToRpm);
+        if (executeCommand(upgradeRpm) != 0) {
+            throw new PrestoManagerException("Failed to upgrade presto");
         }
     }
 }
