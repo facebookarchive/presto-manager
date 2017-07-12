@@ -33,6 +33,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import java.net.MalformedURLException;
@@ -51,8 +52,8 @@ public final class PackageAPI
     private static PackageType installedPackageType;
 
     @PUT
-    @Consumes({"text/plain"})
-    @Produces({"text/plain"})
+    @Consumes({MediaType.TEXT_PLAIN})
+    @Produces({MediaType.TEXT_PLAIN})
     @ApiOperation(value = "Install presto using rpm or tarball")
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request"),
@@ -78,8 +79,8 @@ public final class PackageAPI
     }
 
     @POST
-    @Consumes({"text/plain"})
-    @Produces({"text/plain"})
+    @Consumes({MediaType.TEXT_PLAIN})
+    @Produces({MediaType.TEXT_PLAIN})
     @ApiOperation(value = "Upgrade presto")
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request"),

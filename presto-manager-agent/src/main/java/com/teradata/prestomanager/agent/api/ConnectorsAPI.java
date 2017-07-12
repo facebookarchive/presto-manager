@@ -29,6 +29,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import java.nio.file.Paths;
@@ -45,7 +46,7 @@ public final class ConnectorsAPI
     private static final Logger LOGGER = LogManager.getLogger(ConnectorsAPI.class);
 
     @GET
-    @Produces({"text/plain"})
+    @Produces({MediaType.TEXT_PLAIN})
     @ApiOperation(value = "Get avaiable connector file names")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved configuration", response = String.class)})
@@ -57,7 +58,7 @@ public final class ConnectorsAPI
 
     @GET
     @Path("/{file}")
-    @Produces({"text/plain"})
+    @Produces({MediaType.TEXT_PLAIN})
     @ApiOperation(value = "Get connectors by file")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved file", response = String.class),
@@ -99,7 +100,7 @@ public final class ConnectorsAPI
 
     @GET
     @Path("/{file}/{property}")
-    @Produces({"text/plain"})
+    @Produces({MediaType.TEXT_PLAIN})
     @ApiOperation(value = "Get specific connector property")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved property", response = String.class),
