@@ -13,26 +13,72 @@
  */
 package com.teradata.prestomanager.agent;
 
+import com.google.common.io.ByteStreams;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 
-import static java.lang.Runtime.getRuntime;
 import static java.lang.String.format;
 
-// TODO: Add logger
 public final class CommandExecutor
 {
-    private CommandExecutor() {}
+    private static final Logger LOGGER = LogManager.getLogger(CommandExecutor.class);
+    private static final int DEFAULT_TIMEOUT = 60;
+    private final String[] commandArray;
+    private final int timeout;
 
-    public static int executeCommand(String command)
+    private CommandExecutor(String[] commandArray, int timeout)
+    {
+        if (commandArray.length == 0) {
+            throw new IllegalArgumentException("Command array is empty");
+        }
+        this.commandArray = commandArray;
+        this.timeout = timeout;
+    }
+
+    public static int executeCommand(String... command)
             throws PrestoManagerException
     {
+        return new CommandExecutor(command, DEFAULT_TIMEOUT).execute();
+    }
+
+    public static int executeCommand(int timeoutInSeconds, String... command)
+            throws PrestoManagerException
+    {
+        return new CommandExecutor(command, timeoutInSeconds).execute();
+    }
+
+    private int execute()
+            throws PrestoManagerException
+    {
+        String commandString = String.join(" ", commandArray);
+        LOGGER.debug("Command to be executed: {}", commandString);
+
+        ProcessBuilder processBuilder = new ProcessBuilder(commandArray);
+        processBuilder.redirectErrorStream(true);
         try {
-            Process process = getRuntime().exec(command);
-            process.waitFor(2, TimeUnit.MINUTES);
+            Process process = processBuilder.start();
+            try (InputStream processStream = process.getInputStream()) {
+                new Thread(() -> {
+                    try {
+                        LOGGER.info("Output from command: {}\n{}", commandString, new String(ByteStreams.toByteArray(processStream)));
+                    }
+                    catch (IOException e) {
+                        LOGGER.error("Failed to log the process output");
+                    }
+                }).start();
+                if (!process.waitFor(timeout, TimeUnit.SECONDS)) {
+                    process.destroyForcibly();
+                    throw new PrestoManagerException(format("Command timed out: %s", commandString));
+                }
+            }
             return process.exitValue();
         }
-        catch (Exception e) {
-            throw new PrestoManagerException(format("Error executing command: %s", command), e);
+        catch (IOException | InterruptedException e) {
+            throw new PrestoManagerException(format("Error executing command: %s", commandString), e);
         }
     }
 }

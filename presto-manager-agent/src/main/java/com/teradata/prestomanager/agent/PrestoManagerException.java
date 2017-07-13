@@ -13,6 +13,8 @@
  */
 package com.teradata.prestomanager.agent;
 
+import static java.lang.String.format;
+
 public class PrestoManagerException
         extends Exception
 {
@@ -23,13 +25,13 @@ public class PrestoManagerException
         super(message);
     }
 
-    public PrestoManagerException(Throwable cause)
-    {
-        super(cause);
-    }
-
     public PrestoManagerException(String message, Throwable cause)
     {
         super(message, cause);
+    }
+
+    public PrestoManagerException(String message, int returnValue)
+    {
+        super(format("%s; Process exited with return value: %s", message, returnValue));
     }
 }
