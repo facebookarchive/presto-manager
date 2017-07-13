@@ -13,51 +13,47 @@
  */
 package com.teradata.prestomanager.agent;
 
-import com.teradata.prestomanager.agent.api.ConfigAPI;
-import com.teradata.prestomanager.agent.api.ConnectorsAPI;
-import com.teradata.prestomanager.agent.api.ControlAPI;
-import com.teradata.prestomanager.agent.api.LogsAPI;
-import com.teradata.prestomanager.agent.api.PackageAPI;
-import com.teradata.prestomanager.common.ServerBuilder;
-import org.eclipse.jetty.server.Server;
+import com.google.inject.Injector;
+import io.airlift.bootstrap.Bootstrap;
+import io.airlift.discovery.client.Announcer;
+import io.airlift.discovery.client.DiscoveryModule;
+import io.airlift.event.client.HttpEventModule;
+import io.airlift.http.server.HttpServerModule;
+import io.airlift.jaxrs.JaxrsModule;
+import io.airlift.json.JsonModule;
+import io.airlift.node.NodeModule;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 class AgentServer
 {
-    // TODO: Replace placeholder constants with configurable properties
-    private static final int PORT = 8081;
-    private static final String URI = "http://localhost/";
+    private static final Logger LOG = LogManager.getLogger(AgentServer.class);
 
     private AgentServer() {}
 
     public static void main(String[] args)
             throws Exception
     {
-        Server server = new ServerBuilder()
-                .setURI(URI)
-                .setPort(PORT)
-                .registerComponent(ConfigAPI.class)
-                .registerComponent(ConnectorsAPI.class)
-                .registerComponent(LogsAPI.class)
-                .registerComponent(PackageAPI.class)
-                .registerComponent(ControlAPI.class)
-                .build();
+        // TODO: Replace placeholder properties with proper configuration
+        System.setProperty("node.environment", "test");
+        System.setProperty("http-server.http.port", "8081");
+
+        Bootstrap bootstrap = new Bootstrap(
+                new NodeModule(),
+                new DiscoveryModule(),
+                new HttpServerModule(),
+                new JsonModule(),
+                new JaxrsModule(true), // requireExplicitBindings = true
+                new HttpEventModule(),
+                new AgentServerModule()
+        );
 
         try {
-            server.start();
-            server.join();
+            Injector injector = bootstrap.strictConfig().initialize();
+            injector.getInstance(Announcer.class).start();
         }
         catch (Exception e) {
-            // TODO: Log exception
-            throw e;
-        }
-        finally {
-            try {
-                server.stop();
-            }
-            catch (Exception e) {
-                // TODO: Log exception
-                throw e;
-            }
+            LOG.error("Error running application", e);
         }
     }
 }

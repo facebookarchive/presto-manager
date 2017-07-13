@@ -13,6 +13,8 @@
  */
 package com.teradata.prestomanager.agent.api;
 
+import com.google.inject.Inject;
+import com.teradata.prestomanager.agent.PrestoRpmController;
 import com.teradata.prestomanager.agent.StopType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -31,10 +33,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
-import static com.teradata.prestomanager.agent.PrestoRpmControlUtils.restartUsingRpm;
-import static com.teradata.prestomanager.agent.PrestoRpmControlUtils.startUsingRpm;
-import static com.teradata.prestomanager.agent.PrestoRpmControlUtils.statusUsingRpm;
-import static com.teradata.prestomanager.agent.PrestoRpmControlUtils.stopUsingRpm;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 
@@ -44,6 +42,14 @@ import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 public class ControlAPI
 {
     private static final Logger LOGGER = LogManager.getLogger(ControlAPI.class);
+
+    private PrestoRpmController controller;
+
+    @Inject
+    public ControlAPI(PrestoRpmController controller)
+    {
+        this.controller = controller;
+    }
 
     @POST
     @Path("/start")
@@ -57,7 +63,7 @@ public class ControlAPI
     public synchronized Response startPresto()
     {
         LOGGER.debug("POST /presto/start");
-        return startUsingRpm();
+        return controller.startUsingRpm();
     }
 
     @POST
@@ -73,7 +79,7 @@ public class ControlAPI
     @DefaultValue("GRACEFUL") StopType stopType)
     {
         LOGGER.debug("POST /presto/stop ; stopType: {}", stopType);
-        return stopUsingRpm(stopType);
+        return controller.stopUsingRpm(stopType);
     }
 
     @POST
@@ -87,7 +93,7 @@ public class ControlAPI
     public synchronized Response restartPresto()
     {
         LOGGER.debug("POST /presto/restart");
-        return restartUsingRpm();
+        return controller.restartUsingRpm();
     }
 
     @GET
@@ -101,6 +107,6 @@ public class ControlAPI
     public synchronized Response prestoStatus()
     {
         LOGGER.debug("GET /presto/status");
-        return statusUsingRpm();
+        return controller.statusUsingRpm();
     }
 }
