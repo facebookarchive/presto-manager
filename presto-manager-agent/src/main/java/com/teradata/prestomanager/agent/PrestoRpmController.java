@@ -16,11 +16,12 @@ package com.teradata.prestomanager.agent;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.glassfish.jersey.client.JerseyClient;
 
 import javax.ws.rs.ProcessingException;
+import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
@@ -40,20 +41,24 @@ import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.UriBuilder.fromUri;
-import static org.glassfish.jersey.client.JerseyClientBuilder.createClient;
 
-public final class PrestoRpmControlUtils
+public class PrestoRpmController
 {
-    private static final Logger LOGGER = LogManager.getLogger(PrestoRpmControlUtils.class);
-    private static final JerseyClient JERSEY_CLIENT = createClient();
+    private static final Logger LOGGER = LogManager.getLogger(PrestoRpmController.class);
     private static final String LAUNCHER_SCRIPT = "/usr/lib/presto/bin/launcher";
     private static final Path PRESTO_CONFIG_FILE = Paths.get("/etc/presto/config.properties");
     private static final Gson GSON = new Gson();
     private static final int SUBPROCESS_TIMEOUT = 120;
 
-    private PrestoRpmControlUtils() {}
+    private final Client CLIENT;
 
-    public static Response startUsingRpm()
+    @Inject
+    private PrestoRpmController(Client client)
+    {
+        CLIENT = client;
+    }
+
+    public Response startUsingRpm()
     {
         try {
             if (!isInstalled()) {
@@ -80,7 +85,7 @@ public final class PrestoRpmControlUtils
                 "Please check back later using the status api to make sure that Presto has successfully started.").build();
     }
 
-    public static Response stopUsingRpm(StopType stopType)
+    public Response stopUsingRpm(StopType stopType)
     {
         try {
             if (!isInstalled()) {
@@ -117,7 +122,7 @@ public final class PrestoRpmControlUtils
         return Response.status(OK).build();
     }
 
-    public static Response restartUsingRpm()
+    public Response restartUsingRpm()
     {
         try {
             if (!isInstalled()) {
@@ -146,7 +151,7 @@ public final class PrestoRpmControlUtils
      *
      * @return Response containing node status
      */
-    public static Response statusUsingRpm()
+    public Response statusUsingRpm()
     {
         try {
             if (!isInstalled()) {
@@ -162,8 +167,8 @@ public final class PrestoRpmControlUtils
         try {
             String prestoPort = getPrestoPort();
             UriBuilder uriBuilder = fromUri(format("http://localhost:%s", prestoPort)).path("/v1/info");
-            Response prestoInfo = JERSEY_CLIENT.target(uriBuilder.build()).request(APPLICATION_JSON).buildGet().invoke();
-            Response prestoState = JERSEY_CLIENT.target(uriBuilder.path("/state").build())
+            Response prestoInfo = CLIENT.target(uriBuilder.build()).request(APPLICATION_JSON).buildGet().invoke();
+            Response prestoState = CLIENT.target(uriBuilder.path("/state").build())
                     .request(APPLICATION_JSON).buildGet().invoke();
             JsonParser jsonParser = new JsonParser();
             JsonObject prestoStatus = jsonParser.parse(prestoInfo.readEntity(String.class)).getAsJsonObject();
@@ -203,7 +208,7 @@ public final class PrestoRpmControlUtils
         }
     }
 
-    private static void killPresto()
+    private void killPresto()
             throws PrestoManagerException
     {
         executeCommand("sudo", LAUNCHER_SCRIPT, "kill");
@@ -213,13 +218,13 @@ public final class PrestoRpmControlUtils
         }
     }
 
-    private static void gracefulStop()
+    private void gracefulStop()
             throws PrestoManagerException
     {
         try {
             String prestoPort = getPrestoPort();
             UriBuilder uriBuilder = fromUri(format("http://localhost:%s", prestoPort)).path("/v1/info/state");
-            Response response = JERSEY_CLIENT.target(uriBuilder.build()).request(TEXT_PLAIN)
+            Response response = CLIENT.target(uriBuilder.build()).request(TEXT_PLAIN)
                     .buildPut(entity(GSON.toJson("SHUTTING_DOWN"), APPLICATION_JSON)).invoke();
             if (response.getStatus() != 200) {
                 throw new PrestoManagerException("Failed to stop presto gracefully");
@@ -239,13 +244,13 @@ public final class PrestoRpmControlUtils
         return getFileProperty(PRESTO_CONFIG_FILE, "http-server.http.port");
     }
 
-    private static boolean isCoordinator()
+    private boolean isCoordinator()
             throws PrestoManagerException
     {
         try {
             String prestoPort = getPrestoPort();
             UriBuilder uriBuilder = fromUri(format("http://localhost:%s", prestoPort)).path("/v1/info/coordinator");
-            Response isCoordinator = JERSEY_CLIENT.target(uriBuilder.build()).request(TEXT_PLAIN).buildGet().invoke();
+            Response isCoordinator = CLIENT.target(uriBuilder.build()).request(TEXT_PLAIN).buildGet().invoke();
             return isCoordinator.getStatus() == 200;
         }
         catch (ProcessingException e) {

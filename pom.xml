@@ -31,9 +31,8 @@
         <project.root>${project.basedir}</project.root>
 
         <!-- Dependency versions -->
-        <jetty.version>9.4.6.v20170531</jetty.version>
-        <jersey.version>2.26-b06</jersey.version>
         <log4j.version>2.8.2</log4j.version>
+        <airlift.version>0.148</airlift.version>
         <jackson.version>2.8.1</jackson.version>
 
         <!-- Plugin settings -->
@@ -62,12 +61,19 @@
             <version>${jackson.version}</version>
         </dependency>
 
-        <dependency>
+        <dependency> <!-- TODO: Remove GSON in favor of Jackson -->
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.8.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <version>2.1-m09</version>
+        </dependency>
+
+        <!-- TODO: Replace log4j with airlift logging -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
@@ -78,6 +84,7 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <version>${log4j.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <dependency>
@@ -87,46 +94,69 @@
         </dependency>
 
         <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <version>4.1.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>io.swagger</groupId>
             <artifactId>swagger-annotations</artifactId>
             <version>1.5.15</version>
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-            <version>${jetty.version}</version>
+            <groupId>io.airlift</groupId>
+            <artifactId>bootstrap</artifactId>
+            <version>${airlift.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-util</artifactId>
-            <version>${jetty.version}</version>
+            <groupId>io.airlift</groupId>
+            <artifactId>node</artifactId>
+            <version>${airlift.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.glassfish.jersey.core</groupId>
-            <artifactId>jersey-common</artifactId>
-            <version>${jersey.version}</version>
+            <groupId>io.airlift</groupId>
+            <artifactId>discovery</artifactId>
+            <version>${airlift.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.glassfish.jersey.containers</groupId>
-            <artifactId>jersey-container-jetty-http</artifactId>
-            <version>${jersey.version}</version>
+            <groupId>io.airlift</groupId>
+            <artifactId>http-server</artifactId>
+            <version>${airlift.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.glassfish.jersey.containers</groupId>
-            <artifactId>jersey-container-jetty-servlet</artifactId>
-            <version>${jersey.version}</version>
+            <groupId>io.airlift</groupId>
+            <artifactId>event</artifactId>
+            <version>${airlift.version}</version>
         </dependency>
 
-        <dependency> <!-- runtime dependency for JettyHttpContainerFactory -->
-            <groupId>org.glassfish.jersey.inject</groupId>
-            <artifactId>jersey-hk2</artifactId>
-            <version>${jersey.version}</version>
-            <scope>runtime</scope>
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>log</artifactId>
+            <version>${airlift.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>jaxrs</artifactId>
+            <version>${airlift.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>json</artifactId>
+            <version>${airlift.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>configuration</artifactId>
+            <version>${airlift.version}</version>
         </dependency>
     </dependencies>
 
