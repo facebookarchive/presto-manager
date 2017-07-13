@@ -14,6 +14,8 @@
 package com.teradata.prestomanager.agent;
 
 import com.teradata.prestomanager.agent.api.PackageAPI.PackageType;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import static com.teradata.prestomanager.agent.CommandExecutor.executeCommand;
 import static java.lang.String.format;
@@ -22,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 public class PrestoUninstaller
         implements PrestoCommand
 {
+    private static final Logger LOGGER = LogManager.getLogger(PrestoUninstaller.class);
     private final PackageType packageType;
     private final boolean disableDependencyChecking;
     private final boolean ignoreNotInstalled;
@@ -51,23 +54,27 @@ public class PrestoUninstaller
     private static void uninstallUsingRpm(String packageName, boolean checkDependencies, boolean ignoreErrors)
             throws PrestoManagerException
     {
-        if (executeCommand(format("sudo rpm -q %s", packageName)) != 0) {
+        int checkPackageInstalled = executeCommand("sudo", "rpm", "-q", packageName);
+        if (checkPackageInstalled != 0) {
             if (!ignoreErrors) {
-                throw new PrestoManagerException(format("Package %s is not installed", packageName));
+                throw new PrestoManagerException(format("Package %s is not installed", packageName), checkPackageInstalled);
             }
+            LOGGER.warn("Package {} is not installed; Process exited with return value: {}", packageName, checkPackageInstalled);
             return;
         }
-        if (executeCommand("service presto status") == 0) {
+        if (executeCommand("service", "presto", "status") == 0) {
             if (!ignoreErrors) {
                 throw new PrestoManagerException("Presto is running");
             }
+            LOGGER.warn("Presto is running");
         }
         else {
             String nodeps = checkDependencies ? "" : "--nodeps";
-            String uninstallPackage = format("sudo rpm -e %s %s", nodeps, packageName);
-            if (executeCommand(uninstallPackage) != 0) {
-                throw new PrestoManagerException(format("Failed to uninstall package %s", packageName));
+            int uninstallPackage = executeCommand(90, "sudo", "rpm", "-e", nodeps, packageName);
+            if (uninstallPackage != 0) {
+                throw new PrestoManagerException(format("Failed to uninstall package %s", packageName), uninstallPackage);
             }
         }
+        LOGGER.debug("Successfully uninstalled presto");
     }
 }

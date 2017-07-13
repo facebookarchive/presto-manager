@@ -14,6 +14,8 @@
 package com.teradata.prestomanager.agent;
 
 import com.teradata.prestomanager.agent.api.PackageAPI.PackageType;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,6 +30,7 @@ import static org.apache.commons.io.FileUtils.copyURLToFile;
 public class PrestoUpgrader
         implements PrestoCommand
 {
+    private static final Logger LOGGER = LogManager.getLogger(PrestoUpgrader.class);
     private static final int CONNECTION_TIMEOUT = 1000000;
     private static final int READ_TIMEOUT = 10000;
 
@@ -47,11 +50,12 @@ public class PrestoUpgrader
     {
         switch (packageType) {
             case RPM:
-                if (executeCommand("service presto status") == 0) {
+                if (executeCommand("service", "presto", "status") == 0) {
                     throw new PrestoManagerException("Presto is running");
                 }
                 File tempFile;
                 try {
+                    LOGGER.debug("Downloading package from url: {}", urlToFetchPackage);
                     tempFile = createTempFile("presto", ".rpm");
                     copyURLToFile(urlToFetchPackage, tempFile, CONNECTION_TIMEOUT, READ_TIMEOUT);
                 }
@@ -65,7 +69,6 @@ public class PrestoUpgrader
                 // TODO: Add tarball installation
                 throw new UnsupportedOperationException("Tarball upgrade is not supported");
             default:
-                // TODO: Add to logger
                 throw new IllegalArgumentException(format("Unsupported package type %s", packageType));
         }
     }
@@ -73,17 +76,18 @@ public class PrestoUpgrader
     private static void upgradeUsingRpm(String pathToRpm, boolean disableDependencyChecking)
             throws PrestoManagerException
     {
-        String checkRpm = format("rpm -Kv --nosignature %s", pathToRpm);
-        if (executeCommand(checkRpm) != 0) {
-            throw new PrestoManagerException("Corrupted RPM");
+        int checkRpm = executeCommand("rpm", "-Kv", "--nosignature", pathToRpm);
+        if (checkRpm != 0) {
+            throw new PrestoManagerException("Corrupted RPM", checkRpm);
         }
         String nodeps = "";
         if (disableDependencyChecking) {
             nodeps = "--nodeps";
         }
-        String upgradeRpm = format("sudo rpm -U %s %s", nodeps, pathToRpm);
-        if (executeCommand(upgradeRpm) != 0) {
-            throw new PrestoManagerException("Failed to upgrade presto");
+        int upgradeRpm = executeCommand(150, "sudo", "rpm", "-U", nodeps, pathToRpm);
+        if (upgradeRpm != 0) {
+            throw new PrestoManagerException("Failed to upgrade presto", upgradeRpm);
         }
+        LOGGER.debug("Successfully upgraded presto");
     }
 }
