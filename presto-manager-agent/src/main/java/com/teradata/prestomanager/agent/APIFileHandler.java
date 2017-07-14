@@ -13,8 +13,7 @@
  */
 package com.teradata.prestomanager.agent;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import io.airlift.log.Logger;
 
 import javax.ws.rs.core.Response;
 
@@ -30,7 +29,7 @@ import static javax.ws.rs.core.Response.Status;
 
 public class APIFileHandler
 {
-    private static final Logger LOGGER = LogManager.getLogger(APIFileHandler.class);
+    private static final Logger LOGGER = Logger.get(APIFileHandler.class);
     private final Path baseDir;
 
     public APIFileHandler(Path baseDir)
@@ -43,15 +42,15 @@ public class APIFileHandler
         try {
             List<String> fileNames = AgentFileUtils.getFileNameList(baseDir);
             String namesToReturn = String.join("\r\n", fileNames);
-            LOGGER.debug("Successfully retrieved the list of file names from directory {}", baseDir.toString());
+            LOGGER.debug("Successfully retrieved the list of file names from directory '%s'", baseDir.toString());
             return Response.status(Status.OK).entity(namesToReturn).build();
         }
         catch (IllegalArgumentException e) {
-            LOGGER.error("{} Not a directory", baseDir.toString(), e);
+            LOGGER.error(e, "Pre-configured directory '%s' is not a directory", baseDir.toString());
             return Response.status(Status.NOT_FOUND).build();
         }
         catch (IOException e) {
-            LOGGER.error("Failed to retrieve the list of file names from directory: {}", baseDir.toString());
+            LOGGER.error(e, "Failed to retrieve the list of file names from directory: %s", baseDir.toString());
             return Response.status(Status.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -60,15 +59,15 @@ public class APIFileHandler
     {
         try {
             String fileContent = AgentFileUtils.getFile(Paths.get(baseDir.toString(), path));
-            LOGGER.debug("Successfully retrieved the content of file {}", path);
+            LOGGER.debug("Successfully retrieved contents of file '%s'", path);
             return Response.status(Status.OK).entity(fileContent).build();
         }
         catch (FileNotFoundException e) {
-            LOGGER.error("File {} not found", path, e);
+            LOGGER.error(e, "File '%s' not found", path);
             return Response.status(Status.NOT_FOUND).build();
         }
         catch (IOException e) {
-            LOGGER.error("Failed to process file {}", path, e);
+            LOGGER.error(e, "Failed to process file '%s'", path);
             return Response.status(Status.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -77,15 +76,15 @@ public class APIFileHandler
     {
         try {
             AgentFileUtils.replaceFile(Paths.get(baseDir.toString(), path), url);
-            LOGGER.debug("Successfully replaced file {} with url {}", path, url);
+            LOGGER.debug("Successfully replaced file '%s' with url '%s'", path, url);
             return Response.status(Status.ACCEPTED).build();
         }
         catch (FileNotFoundException e) {
-            LOGGER.error("File {} not found", path, e);
+            LOGGER.error(e, "File '%s' not found", path);
             return Response.status(Status.NOT_FOUND).build();
         }
         catch (IOException e) {
-            LOGGER.error("Failed to process file {}", path, e);
+            LOGGER.error(e, "Failed to process file '%s'", path);
             return Response.status(Status.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -94,15 +93,15 @@ public class APIFileHandler
     {
         try {
             AgentFileUtils.updateProperty(Paths.get(baseDir.toString(), path), property, value);
-            LOGGER.debug("Successfully updated property {} of file {} to {} ", property, path, value);
+            LOGGER.debug("Successfully updated property '%s' of file '%s' to '%s'", property, path, value);
             return Response.status(Status.ACCEPTED).build();
         }
         catch (FileNotFoundException e) {
-            LOGGER.error("File {} not found", path, e);
+            LOGGER.error(e, "File '%s' not found", path);
             return Response.status(Status.NOT_FOUND).build();
         }
         catch (IOException e) {
-            LOGGER.error("Failed to process file {}", path, e);
+            LOGGER.error(e, "Failed to process file '%s'", path);
             return Response.status(Status.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -111,15 +110,15 @@ public class APIFileHandler
     {
         try {
             AgentFileUtils.deleteFile(Paths.get(baseDir.toString(), path));
-            LOGGER.debug("Successfully deleted file {}", path);
+            LOGGER.debug("Successfully deleted file '%s'", path);
             return Response.status(Status.ACCEPTED).build();
         }
         catch (FileNotFoundException | IllegalArgumentException e) {
-            LOGGER.error("File {} not found", path, e);
+            LOGGER.error(e, "File '%s' not found", path);
             return Response.status(Status.NOT_FOUND).build();
         }
         catch (IOException e) {
-            LOGGER.error("Failed to process file {}", path, e);
+            LOGGER.error(e, "Failed to process file '%s'", path);
             return Response.status(Status.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -128,15 +127,15 @@ public class APIFileHandler
     {
         try {
             String value = AgentFileUtils.getFileProperty(Paths.get(baseDir.toString(), path), property);
-            LOGGER.debug("Successfully retrieved property {} from file {} ", property, path);
+            LOGGER.debug("Successfully retrieved property '%s' from file '%s'", property, path);
             return Response.status(Status.OK).entity(value).build();
         }
         catch (NoSuchElementException | FileNotFoundException e) {
-            LOGGER.error("File {} not found", path, e);
+            LOGGER.error(e, "File '%s' not found", path);
             return Response.status(Status.NOT_FOUND).build();
         }
         catch (IOException e) {
-            LOGGER.error("Failed to process file {}", path, e);
+            LOGGER.error(e, "Failed to process file '%s'", path);
             return Response.status(Status.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -145,15 +144,15 @@ public class APIFileHandler
     {
         try {
             AgentFileUtils.removePropertyFromFile(Paths.get(baseDir.toString(), path), property);
-            LOGGER.debug("Successfully deleted property {} from file {}", property, path);
+            LOGGER.debug("Successfully deleted property '%s' from file '%s'", property, path);
             return Response.status(Status.ACCEPTED).build();
         }
         catch (NoSuchElementException | FileNotFoundException e) {
-            LOGGER.error("File {} not found", path, e);
+            LOGGER.error(e, "File '%s' not found", path);
             return Response.status(Status.NOT_FOUND).build();
         }
         catch (IOException e) {
-            LOGGER.error("Failed to process file {}", path, e);
+            LOGGER.error(e, "Failed to process file '%s'", path);
             return Response.status(Status.INTERNAL_SERVER_ERROR).build();
         }
     }

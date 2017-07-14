@@ -13,8 +13,7 @@
  */
 package com.teradata.prestomanager.agent;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import io.airlift.log.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +33,7 @@ import static java.util.Objects.requireNonNull;
 public final class PrestoInstaller
         implements PrestoCommand
 {
-    private static final Logger LOGGER = LogManager.getLogger(PrestoInstaller.class);
+    private static final Logger LOGGER = Logger.get(PrestoInstaller.class);
     private static final Path CATALOG_DIR = Paths.get("/etc/presto/catalog");
     private static final int SUBPROCESS_TIMEOUT = 150;
 
@@ -60,7 +59,7 @@ public final class PrestoInstaller
                 }
                 finally {
                     if (!tempFile.delete()) {
-                        LOGGER.warn("Failed to delete the tempFile: {}", tempFile.toString());
+                        LOGGER.warn("Failed to delete the temporary file: %s", tempFile.toString());
                     }
                 }
                 break;
@@ -84,10 +83,10 @@ public final class PrestoInstaller
             installRpm = executeCommand(SUBPROCESS_TIMEOUT, "sudo", "rpm", "-iv", "--nodeps", pathToRpm);
         }
         if (installRpm != 0) {
-            throw new PrestoManagerException("Failed to install presto", installRpm);
+            throw new PrestoManagerException("Failed to install Presto", installRpm);
         }
         addTpchCatalog();
-        LOGGER.debug("Successfully installed presto");
+        LOGGER.debug("Successfully installed Presto");
     }
 
     private static void addTpchCatalog()

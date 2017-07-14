@@ -1,3 +1,6 @@
+# General
+var/
+
 # Maven
 target/
 log/

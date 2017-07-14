@@ -19,8 +19,6 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Singleton;
 import javax.ws.rs.Consumes;
@@ -44,7 +42,6 @@ import java.nio.file.Paths;
 public final class ConfigAPI
 {
     private static final APIFileHandler apiFileHandler = new APIFileHandler(Paths.get("/etc/presto"));
-    private static final Logger LOGGER = LogManager.getLogger(ConfigAPI.class);
 
     @GET
     @Produces({MediaType.TEXT_PLAIN})
@@ -53,7 +50,6 @@ public final class ConfigAPI
             @ApiResponse(code = 200, message = "Retrieved configuration", response = String.class)})
     public synchronized Response getConfig()
     {
-        LOGGER.debug("GET /config");
         return apiFileHandler.getFileNameList();
     }
 
@@ -67,7 +63,6 @@ public final class ConfigAPI
     public synchronized Response getConfigFile(
             @PathParam("file") @ApiParam("The name of a file") String file)
     {
-        LOGGER.debug("GET /config/{}", file);
         return apiFileHandler.getFile(file);
     }
 
@@ -82,7 +77,6 @@ public final class ConfigAPI
             @PathParam("file") @ApiParam("The name of a file") String file,
             String url)
     {
-        LOGGER.debug("POST /config/{}", file);
         return apiFileHandler.replaceFileFromURL(file, url);
     }
 
@@ -96,7 +90,6 @@ public final class ConfigAPI
     public synchronized Response deleteConfigFile(
             @PathParam("file") @ApiParam("The name of a file") String file)
     {
-        LOGGER.debug("DELETE /config/{}", file);
         return apiFileHandler.deleteFile(file);
     }
 
@@ -111,7 +104,6 @@ public final class ConfigAPI
             @PathParam("file") @ApiParam("The name of a file") String file,
             @PathParam("property") @ApiParam("A specific property") String property)
     {
-        LOGGER.debug("GET /config/{}/{}", file, property);
         return apiFileHandler.getFileProperty(file, property);
     }
 }

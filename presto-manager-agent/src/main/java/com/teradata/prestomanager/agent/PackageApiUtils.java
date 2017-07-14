@@ -13,8 +13,7 @@
  */
 package com.teradata.prestomanager.agent;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import io.airlift.log.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,7 +28,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class PackageApiUtils
 {
-    private static final Logger LOGGER = LogManager.getLogger(PackageApiUtils.class);
+    private static final Logger LOGGER = Logger.get(PackageApiUtils.class);
 
     private PackageApiUtils() {}
 
@@ -38,7 +37,7 @@ public class PackageApiUtils
     {
         File tempFile;
         try {
-            LOGGER.debug("Downloading package from url: {}. This can take a few minutes.", urlToFetchPackage);
+            LOGGER.debug("Downloading package from url: %s", urlToFetchPackage);
             tempFile = createTempFile("presto", ".rpm");
             try (InputStream inputStream = urlToFetchPackage.openStream()) {
                 copy(inputStream, tempFile.toPath(), REPLACE_EXISTING);
