@@ -20,6 +20,7 @@ import com.teradata.prestomanager.common.ApiRequester;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -34,14 +35,19 @@ import static com.teradata.prestomanager.controller.ResponseWrapper.wrapResponse
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
-public final class RequestDispatcher
+public class RequestDispatcher
 {
     private static final Logger LOGGER = LogManager.getLogger(RequestDispatcher.class);
-    private static NodeSet nodeSet = NodeSet.getInstance();
 
-    private RequestDispatcher() {}
+    private NodeSet nodeSet;
 
-    public static Response forwardRequest(String scope, ApiRequester apiRequester, Collection<Integer> nodeId)
+    @Inject
+    public RequestDispatcher(NodeSet nodeSet)
+    {
+        this.nodeSet = nodeSet;
+    }
+
+    public Response forwardRequest(String scope, ApiRequester apiRequester, Collection<Integer> nodeId)
     {
         if (((scope != null) && (!nodeId.isEmpty())) || (scope == null && nodeId.isEmpty())) {
             LOGGER.error("Invalid parameters");

@@ -13,6 +13,8 @@
  */
 package com.teradata.prestomanager.controller;
 
+import com.google.inject.Inject;
+
 import javax.annotation.concurrent.ThreadSafe;
 
 import java.net.URI;
@@ -28,14 +30,10 @@ import static java.util.Objects.requireNonNull;
 @ThreadSafe
 public class NodeSet
 {
-    private static NodeSet nodeSetInstance = new NodeSet();
+    private Set<Agent> nodeSet = ConcurrentHashMap.newKeySet();
 
-    public static Set<Agent> nodeSet = ConcurrentHashMap.newKeySet();
-
-    public static NodeSet getInstance()
-    {
-        return nodeSetInstance;
-    }
+    @Inject
+    public NodeSet() {}
 
     public void addAgent(URI uri, boolean isCoordinator, boolean isWorker)
     {

@@ -13,7 +13,9 @@
  */
 package com.teradata.prestomanager.controller.api;
 
+import com.google.inject.Inject;
 import com.teradata.prestomanager.common.ApiRequester;
+import com.teradata.prestomanager.controller.RequestDispatcher;
 
 import javax.inject.Singleton;
 import javax.ws.rs.DELETE;
@@ -23,13 +25,14 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import java.util.Collection;
 import java.util.List;
 
-import static com.teradata.prestomanager.controller.RequestDispatcher.forwardRequest;
 import static org.eclipse.jetty.http.HttpMethod.DELETE;
 import static org.eclipse.jetty.http.HttpMethod.GET;
 import static org.eclipse.jetty.http.HttpMethod.POST;
@@ -38,12 +41,34 @@ import static org.eclipse.jetty.http.HttpMethod.POST;
 @Singleton
 public class ControllerConnectorAPI
 {
+    private Client forwardingClient;
+    private RequestDispatcher requestDispatcher;
+
+    @Inject
+    public ControllerConnectorAPI(
+            Client forwardingClient,
+            RequestDispatcher requestDispatcher)
+    {
+        this.forwardingClient = forwardingClient;
+        this.requestDispatcher = requestDispatcher;
+    }
+
+    private ApiRequester.Builder requesterBuilder(Class<?> clazz)
+    {
+        return ApiRequester.builder(forwardingClient, clazz);
+    }
+
+    private Response forwardRequest(String scope, ApiRequester requester, Collection<Integer> nodeId)
+    {
+        return requestDispatcher.forwardRequest(scope, requester, nodeId);
+    }
+
     @GET
     @Produces({MediaType.TEXT_PLAIN})
     public Response getConnectors(@QueryParam("scope") String scope,
             @QueryParam("nodeId") List<Integer> nodeId)
     {
-        ApiRequester apiRequester = ApiRequester.builder(ControllerConnectorAPI.class)
+        ApiRequester apiRequester = requesterBuilder(ControllerConnectorAPI.class)
                 .httpMethod(GET)
                 .accept(MediaType.TEXT_PLAIN)
                 .build();
@@ -59,7 +84,7 @@ public class ControllerConnectorAPI
             @QueryParam("scope") String scope,
             @QueryParam("nodeId") List<Integer> nodeId)
     {
-        ApiRequester apiRequester = ApiRequester.builder(ControllerConnectorAPI.class)
+        ApiRequester apiRequester = requesterBuilder(ControllerConnectorAPI.class)
                 .pathMethod("getConnectorFile")
                 .httpMethod(GET)
                 .resolveTemplate("file", file)
@@ -78,7 +103,7 @@ public class ControllerConnectorAPI
             @QueryParam("scope") String scope,
             @QueryParam("nodeId") List<Integer> nodeId)
     {
-        ApiRequester apiRequester = ApiRequester.builder(ControllerConnectorAPI.class)
+        ApiRequester apiRequester = requesterBuilder(ControllerConnectorAPI.class)
                 .pathMethod("getConnectorProperty")
                 .httpMethod(GET)
                 .resolveTemplate("file", file)
@@ -98,7 +123,7 @@ public class ControllerConnectorAPI
             @QueryParam("scope") String scope,
             @QueryParam("nodeId") List<Integer> nodeId)
     {
-        ApiRequester apiRequester = ApiRequester.builder(ControllerConnectorAPI.class)
+        ApiRequester apiRequester = requesterBuilder(ControllerConnectorAPI.class)
                 .pathMethod("setConnectorFileByURL")
                 .httpMethod(POST)
                 .resolveTemplate("file", file)
@@ -117,7 +142,7 @@ public class ControllerConnectorAPI
             @QueryParam("scope") String scope,
             @QueryParam("nodeId") List<Integer> nodeId)
     {
-        ApiRequester apiRequester = ApiRequester.builder(ControllerConnectorAPI.class)
+        ApiRequester apiRequester = requesterBuilder(ControllerConnectorAPI.class)
                 .pathMethod("deleteConnectorFile")
                 .httpMethod(DELETE)
                 .resolveTemplate("file", file)
