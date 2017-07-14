@@ -14,8 +14,7 @@
 package com.teradata.prestomanager.agent;
 
 import com.teradata.prestomanager.common.JaxrsParameter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import io.airlift.log.Logger;
 
 import javax.ws.rs.core.Response;
 
@@ -48,7 +47,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class LogsHandler
 {
-    private static final Logger LOG = LogManager.getLogger(LogsHandler.class);
+    private static final Logger LOG = Logger.get(LogsHandler.class);
 
     public static final String DEFAULT_LOG_LEVEL = "ALL";
 
@@ -84,15 +83,15 @@ public final class LogsHandler
                     .collect(Collectors.joining("\r\n"));
         }
         catch (NoSuchFileException e) {
-            LOG.error("Configured log directory does not exist", e);
+            LOG.error(e, "Configured log directory does not exist");
             return serverError("Configured log directory does not exist");
         }
         catch (NotDirectoryException e) {
-            LOG.error("Configured log directory is not a directory", e);
+            LOG.error(e, "Configured log directory is not a directory");
             return serverError("Configured log directory is not a directory");
         }
         catch (IOException e) {
-            LOG.warn("IOException getting file list", e);
+            LOG.warn(e, "IOException getting file list");
             return serverError("IOException getting file list");
         }
         return Response.ok(fileList).build();
@@ -152,11 +151,11 @@ public final class LogsHandler
                     : "File not found");
         }
         catch (IllegalArgumentException e) {
-            LOG.error("Internal: Capturing group not present in log entry pattern", e);
+            LOG.error(e, "Internal: Capturing group not present in log entry pattern");
             return serverError("Log parser configured incorrectly");
         }
         catch (DateTimeParseException e) {
-            LOG.error("Internal: Default log entry has invalid date", e);
+            LOG.error(e, "Internal: Default log entry has invalid date");
             return serverError("Log parser configured incorrectly");
         }
 
@@ -165,11 +164,11 @@ public final class LogsHandler
             logEntries = logFilter.streamEntries();
         }
         catch (IOException e) {
-            LOG.warn("IOException while reading file", e);
+            LOG.warn(e, "IOException while reading file");
             return serverError("IOException while reading file");
         }
         catch (DateTimeParseException e) {
-            LOG.warn("Date in log file has invalid format", e);
+            LOG.warn(e, "Date in log file has invalid format");
             return serverError("Date in log file has invalid format");
         }
 
@@ -206,7 +205,7 @@ public final class LogsHandler
                 return Response.noContent().build();
             }
             catch (IOException e) {
-                LOG.warn("IOException while writing log file", e);
+                LOG.warn(e, "IOException while writing log file");
                 return serverError("IOException while writing log file");
             }
         }
@@ -232,11 +231,11 @@ public final class LogsHandler
                     : "File not found");
         }
         catch (IllegalArgumentException e) {
-            LOG.error("Internal: Capturing group not present in log entry pattern", e);
+            LOG.error(e, "Internal: Capturing group not present in log entry pattern");
             return serverError("Log parser configured incorrectly");
         }
         catch (DateTimeParseException e) {
-            LOG.error("Internal: Default log entry has invalid date", e);
+            LOG.error(e, "Internal: Default log entry has invalid date");
             return serverError("Log parser configured incorrectly");
         }
 
@@ -245,11 +244,11 @@ public final class LogsHandler
             logEntries = logFilter.streamEntries();
         }
         catch (IOException e) {
-            LOG.warn("IOException while reading file", e);
+            LOG.warn(e, "IOException while reading file");
             return serverError("IOException while reading file");
         }
         catch (DateTimeParseException e) {
-            LOG.warn("Date in log file has invalid format", e);
+            LOG.warn(e, "Date in log file has invalid format");
             return serverError("Date in log file has invalid format");
         }
 
@@ -257,7 +256,7 @@ public final class LogsHandler
             Files.write(filePath, (Iterable<String>) logEntries::iterator);
         }
         catch (IOException e) {
-            LOG.warn("IOException while writing file", e);
+            LOG.warn(e, "IOException while writing file");
             return serverError("IOException while writing file");
         }
 

@@ -13,8 +13,7 @@
  */
 package com.teradata.prestomanager.agent;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import io.airlift.log.Logger;
 
 import static com.teradata.prestomanager.agent.CommandExecutor.executeCommand;
 import static java.lang.String.format;
@@ -23,7 +22,7 @@ import static java.util.Objects.requireNonNull;
 public class PrestoUninstaller
         implements PrestoCommand
 {
-    private static final Logger LOGGER = LogManager.getLogger(PrestoUninstaller.class);
+    private static final Logger LOGGER = Logger.get(PrestoUninstaller.class);
     private static final String PRESTO_PACKAGE = "presto-server-rpm";
     private static final int SUBPROCESS_TIMEOUT = 90;
 
@@ -61,14 +60,14 @@ public class PrestoUninstaller
             if (!ignoreErrors) {
                 throw new PrestoManagerException(format("Package '%s' is not installed", PRESTO_PACKAGE), checkPackageInstalled);
             }
-            LOGGER.warn("Package '{}' is not installed; Process exited with return value: {}", PRESTO_PACKAGE, checkPackageInstalled);
+            LOGGER.warn("Package '%s' is not installed; Process exited with return value: %s", PRESTO_PACKAGE, checkPackageInstalled);
             return;
         }
         if (executeCommand("service", "presto", "status") == 0) {
             if (!ignoreErrors) {
                 throw new PrestoManagerException("Presto is running");
             }
-            LOGGER.warn("Presto is running");
+            LOGGER.warn("Presto is running, but uninstall will be attempted; Presto will be unstoppable");
         }
         int uninstallPackage;
         if (checkDependencies) {
@@ -80,6 +79,6 @@ public class PrestoUninstaller
         if (uninstallPackage != 0) {
             throw new PrestoManagerException(format("Failed to uninstall package: %s", PRESTO_PACKAGE), uninstallPackage);
         }
-        LOGGER.debug("Successfully uninstalled presto");
+        LOGGER.debug("Successfully uninstalled Presto");
     }
 }

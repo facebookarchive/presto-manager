@@ -16,13 +16,12 @@ package com.teradata.prestomanager.agent.api;
 import com.google.inject.Inject;
 import com.teradata.prestomanager.agent.PrestoRpmController;
 import com.teradata.prestomanager.agent.StopType;
+import io.airlift.log.Logger;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Singleton;
 import javax.ws.rs.DefaultValue;
@@ -41,7 +40,7 @@ import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 @Singleton
 public class ControlAPI
 {
-    private static final Logger LOGGER = LogManager.getLogger(ControlAPI.class);
+    private static final Logger LOGGER = Logger.get(ControlAPI.class);
 
     private PrestoRpmController controller;
 
@@ -62,7 +61,6 @@ public class ControlAPI
     })
     public synchronized Response startPresto()
     {
-        LOGGER.debug("POST /presto/start");
         return controller.startUsingRpm();
     }
 
@@ -78,7 +76,6 @@ public class ControlAPI
     public synchronized Response stopPresto(@QueryParam("stopType") @ApiParam("StopType: TERMINATE, KILL or GRACEFUL")
     @DefaultValue("GRACEFUL") StopType stopType)
     {
-        LOGGER.debug("POST /presto/stop ; stopType: {}", stopType);
         return controller.stopUsingRpm(stopType);
     }
 
@@ -92,7 +89,6 @@ public class ControlAPI
     })
     public synchronized Response restartPresto()
     {
-        LOGGER.debug("POST /presto/restart");
         return controller.restartUsingRpm();
     }
 
@@ -106,7 +102,6 @@ public class ControlAPI
     })
     public synchronized Response prestoStatus()
     {
-        LOGGER.debug("GET /presto/status");
         return controller.statusUsingRpm();
     }
 }

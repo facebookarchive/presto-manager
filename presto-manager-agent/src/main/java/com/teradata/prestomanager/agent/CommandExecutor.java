@@ -14,8 +14,7 @@
 package com.teradata.prestomanager.agent;
 
 import com.google.common.io.ByteStreams;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import io.airlift.log.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +24,7 @@ import static java.lang.String.format;
 
 public final class CommandExecutor
 {
-    private static final Logger LOGGER = LogManager.getLogger(CommandExecutor.class);
+    private static final Logger LOGGER = Logger.get(CommandExecutor.class);
     private static final int DEFAULT_TIMEOUT = 60;
     private final String[] commandArray;
     private final int timeout;
@@ -55,7 +54,7 @@ public final class CommandExecutor
             throws PrestoManagerException
     {
         String commandString = String.join(" ", commandArray);
-        LOGGER.debug("Command to be executed: {}", commandString);
+        LOGGER.debug("Command to be executed: %s", commandString);
 
         ProcessBuilder processBuilder = new ProcessBuilder(commandArray);
         processBuilder.redirectErrorStream(true);
@@ -63,10 +62,10 @@ public final class CommandExecutor
             Process process = processBuilder.start();
             new Thread(() -> {
                 try (InputStream processStream = process.getInputStream()) {
-                    LOGGER.info("Output from command: {}\n{}", commandString, new String(ByteStreams.toByteArray(processStream)));
+                    LOGGER.info("Output from command: %s\n%s", commandString, new String(ByteStreams.toByteArray(processStream)));
                 }
                 catch (IOException e) {
-                    LOGGER.error("Failed to log the process output", e);
+                    LOGGER.error(e, "Failed to log the process output");
                 }
             }).start();
             if (!process.waitFor(timeout, TimeUnit.SECONDS)) {

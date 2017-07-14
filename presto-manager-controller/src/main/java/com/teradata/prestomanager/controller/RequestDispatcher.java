@@ -17,8 +17,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.teradata.prestomanager.common.ApiRequester;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import io.airlift.log.Logger;
 
 import javax.inject.Inject;
 import javax.ws.rs.client.Entity;
@@ -37,7 +36,7 @@ import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 public class RequestDispatcher
 {
-    private static final Logger LOGGER = LogManager.getLogger(RequestDispatcher.class);
+    private static final Logger LOGGER = Logger.get(RequestDispatcher.class);
 
     private NodeSet nodeSet;
 

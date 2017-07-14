@@ -21,13 +21,12 @@ import io.airlift.event.client.HttpEventModule;
 import io.airlift.http.server.HttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
+import io.airlift.log.Logger;
 import io.airlift.node.NodeModule;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 class AgentServer
 {
-    private static final Logger LOG = LogManager.getLogger(AgentServer.class);
+    private static final Logger LOG = Logger.get(AgentServer.class);
 
     private AgentServer() {}
 
@@ -37,6 +36,7 @@ class AgentServer
         // TODO: Replace placeholder properties with proper configuration
         System.setProperty("node.environment", "test");
         System.setProperty("http-server.http.port", "8081");
+        System.setProperty("log.levels-file", "etc/log.properties");
 
         Bootstrap bootstrap = new Bootstrap(
                 new NodeModule(),
@@ -53,7 +53,7 @@ class AgentServer
             injector.getInstance(Announcer.class).start();
         }
         catch (Exception e) {
-            LOG.error("Error running application", e);
+            LOG.error(e, "Error running application");
         }
     }
 }

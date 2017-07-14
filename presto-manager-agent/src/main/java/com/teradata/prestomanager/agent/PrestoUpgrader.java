@@ -13,8 +13,7 @@
  */
 package com.teradata.prestomanager.agent;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import io.airlift.log.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +31,7 @@ import static java.util.Objects.requireNonNull;
 public class PrestoUpgrader
         implements PrestoCommand
 {
-    private static final Logger LOGGER = LogManager.getLogger(PrestoUpgrader.class);
+    private static final Logger LOGGER = Logger.get(PrestoUpgrader.class);
     private static final int SUBPROCESS_TIMEOUT = 150;
     private static final String CONFIG_DIR = "/etc/presto";
 
@@ -66,7 +65,7 @@ public class PrestoUpgrader
                 }
                 finally {
                     if (!tempFile.delete()) {
-                        LOGGER.warn("Failed to delete the tempFile: {}", tempFile.toString());
+                        LOGGER.warn("Failed to delete the tempFile: %s", tempFile.toString());
                     }
                 }
                 break;
@@ -90,7 +89,7 @@ public class PrestoUpgrader
             }
             finally {
                 if (!tempConfig.delete()) {
-                    LOGGER.warn("Failed to delete the tempFile: {}", tempConfig.toString());
+                    LOGGER.warn("Failed to delete the temporary file: %s", tempConfig.toString());
                 }
             }
         }
@@ -111,7 +110,7 @@ public class PrestoUpgrader
             upgradeRpm = executeCommand(SUBPROCESS_TIMEOUT, "sudo", "rpm", "-U", "--nodeps", pathToRpm);
         }
         if (upgradeRpm != 0) {
-            throw new PrestoManagerException("Failed to upgrade presto", upgradeRpm);
+            throw new PrestoManagerException("Failed to upgrade Presto", upgradeRpm);
         }
     }
 

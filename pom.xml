@@ -31,7 +31,6 @@
         <project.root>${project.basedir}</project.root>
 
         <!-- Dependency versions -->
-        <log4j.version>2.8.2</log4j.version>
         <airlift.version>0.148</airlift.version>
         <jackson.version>2.8.1</jackson.version>
 
@@ -77,20 +76,6 @@
             <groupId>javax.ws.rs</groupId>
             <artifactId>javax.ws.rs-api</artifactId>
             <version>2.1-m09</version>
-        </dependency>
-
-        <!-- TODO: Replace log4j with airlift logging -->
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-            <version>${log4j.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>${log4j.version}</version>
-            <scope>runtime</scope>
         </dependency>
 
         <dependency>
