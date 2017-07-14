@@ -14,9 +14,9 @@
 package com.teradata.prestomanager.common;
 
 import org.eclipse.jetty.http.HttpMethod;
-import org.glassfish.jersey.client.JerseyClient;
 
 import javax.annotation.Nullable;
+import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.MediaType;
@@ -29,9 +29,8 @@ import java.net.URI;
 import java.util.concurrent.Future;
 
 import static java.util.Objects.requireNonNull;
-import static org.glassfish.jersey.client.JerseyClientBuilder.createClient;
 
-public final class ApiRequester
+public class ApiRequester
 {
     private final UriBuilder uriBuilder;
     private final HttpMethod method;
@@ -40,12 +39,14 @@ public final class ApiRequester
     @Nullable
     private Entity entity;
 
-    private static JerseyClient jerseyClient = createClient();
+    private Client client;
 
-    private ApiRequester(UriBuilder uriBuilder, HttpMethod method,
+    private ApiRequester(Client client, // TODO: Use AssistedInject to manage this
+            UriBuilder uriBuilder, HttpMethod method,
             Entity entity, MultivaluedMap<String, Object> headers,
             String mediaType)
     {
+        this.client = requireNonNull(client);
         this.uriBuilder = requireNonNull(uriBuilder);
         this.method = requireNonNull(method);
         this.headers = requireNonNull(headers);
@@ -68,7 +69,7 @@ public final class ApiRequester
 
     private Invocation createInvocation(URI uri)
     {
-        Invocation.Builder builder = jerseyClient
+        Invocation.Builder builder = client
                 .target(uriBuilder.uri(uri).build())
                 .request(mediaType)
                 .headers(headers);
@@ -84,13 +85,14 @@ public final class ApiRequester
         return invocation;
     }
 
-    public static Builder builder(Class<?> resource)
+    public static Builder builder(Client client, Class<?> resource)
     {
-        return new Builder(resource);
+        return new Builder(client, resource);
     }
 
     public static class Builder
     {
+        private Client client;
         private UriBuilder uriBuilder;
         private Class<?> resource;
         private HttpMethod method;
@@ -98,15 +100,16 @@ public final class ApiRequester
         private MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
         private String mediaType = MediaType.TEXT_PLAIN;
 
-        private Builder(Class<?> resource)
+        private Builder(Client client, Class<?> resource)
         {
+            this.client = requireNonNull(client);
             this.resource = requireNonNull(resource);
             uriBuilder = UriBuilder.fromResource(resource);
         }
 
         public ApiRequester build()
         {
-            return new ApiRequester(
+            return new ApiRequester(client,
                     uriBuilder, method, entity, headers, mediaType);
         }
 
