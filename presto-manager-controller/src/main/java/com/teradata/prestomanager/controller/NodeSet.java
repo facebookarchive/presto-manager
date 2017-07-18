@@ -79,11 +79,11 @@ public class NodeSet
     //TODO: Add method to generate ID
     public static class Agent
     {
-        private URI uri;
+        private final URI uri;
         private static final AtomicInteger count = new AtomicInteger(0);
-        private int id;
-        private boolean isCoordinator;
-        private boolean isWorker;
+        private final int id;
+        private final boolean isCoordinator;
+        private final boolean isWorker;
 
         private Agent(URI uri, boolean isCoordinator, boolean isWorker)
         {
@@ -104,9 +104,15 @@ public class NodeSet
             return id;
         }
 
-        private boolean isCoordinator() {return isCoordinator;}
+        private boolean isCoordinator()
+        {
+            return isCoordinator;
+        }
 
-        private boolean isWorker() {return isWorker;}
+        private boolean isWorker()
+        {
+            return isWorker;
+        }
 
         @Override
         public boolean equals(Object obj)

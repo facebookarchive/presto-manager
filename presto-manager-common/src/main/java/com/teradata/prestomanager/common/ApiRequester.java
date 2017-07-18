@@ -16,6 +16,7 @@ package com.teradata.prestomanager.common;
 import org.eclipse.jetty.http.HttpMethod;
 import org.glassfish.jersey.client.JerseyClient;
 
+import javax.annotation.Nullable;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.MediaType;
@@ -32,11 +33,12 @@ import static org.glassfish.jersey.client.JerseyClientBuilder.createClient;
 
 public final class ApiRequester
 {
-    private UriBuilder uriBuilder;
-    private HttpMethod method;
+    private final UriBuilder uriBuilder;
+    private final HttpMethod method;
+    private final MultivaluedMap<String, Object> headers;
+    private final String mediaType;
+    @Nullable
     private Entity entity;
-    private MultivaluedMap<String, Object> headers;
-    private String mediaType;
 
     private static JerseyClient jerseyClient = createClient();
 
@@ -89,12 +91,12 @@ public final class ApiRequester
 
     public static class Builder
     {
-        UriBuilder uriBuilder;
-        Class<?> resource;
-        HttpMethod method;
-        Entity entity;
-        MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
-        String mediaType = MediaType.TEXT_PLAIN;
+        private UriBuilder uriBuilder;
+        private Class<?> resource;
+        private HttpMethod method;
+        private Entity entity;
+        private MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+        private String mediaType = MediaType.TEXT_PLAIN;
 
         private Builder(Class<?> resource)
         {
