@@ -29,6 +29,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import java.time.Instant;
@@ -58,8 +59,17 @@ public class LogsAPI
             .toFormatter().withChronology(IsoChronology.INSTANCE);
 
     @GET
+    @Produces({MediaType.TEXT_PLAIN})
+    @ApiOperation(value = "Get a listing of log files")
+    @ApiResponses({@ApiResponse(code = 200, message = "Retrieved file list")})
+    public Response getLogList()
+    {
+        return LogsHandler.getLogList();
+    }
+
+    @GET
     @Path("/{file}")
-    @Produces({"text/plain"})
+    @Produces({MediaType.TEXT_PLAIN})
     @ApiOperation(value = "Get Presto log file")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved logs", response = String.class),
@@ -77,7 +87,7 @@ public class LogsAPI
 
     @DELETE
     @Path("/{file}")
-    @Produces({"text/plain"})
+    @Produces({MediaType.TEXT_PLAIN})
     @ApiOperation(value = "Delete Presto logs")
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Deleted logs"),
