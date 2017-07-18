@@ -22,6 +22,9 @@ import javax.ws.rs.core.Response.Status;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -56,12 +59,41 @@ public final class LogsHandler
     private static final String DATE_GROUP = "date";
     private static final String LEVEL_GROUP = "level";
     private static final Pattern LOG_REGEX = Pattern.compile(
-            "^(?<" + DATE_GROUP + ">[0-9]{4}-[0-9]{2}-[0-9]{2}T" +
+            "^(?<date>[0-9]{4}-[0-9]{2}-[0-9]{2}T" +
                     "[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{3})?[+-][0-9]{4})" +
-                    "\t(?<" + LEVEL_GROUP + ">[A-Z]+)\t(?<thread>[^\t]+)" +
+                    "\t(?<level>[A-Z]+)\t(?<thread>[^\t]+)" +
                     "\t(?<class>[^\t]+)\t(?<message>.*)$");
+    private static final String DEFAULT_ENTRY = "0000-01-01T00:00:00.000+0000" +
+            "\tALL\t[none]\t[none]\tThis log entry was not preceded by a header:";
 
     private LogsHandler() {}
+
+    public static Response getLogList()
+    {
+        String fileList;
+        try (Stream<java.nio.file.Path> files = Files.list(LOG_DIRECTORY)) {
+            fileList = files.filter(Files::isRegularFile)
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .collect(Collectors.joining("\r\n"));
+        }
+        catch (NoSuchFileException e) {
+            return Response.status(Status.INTERNAL_SERVER_ERROR)
+                    .entity("Pre-configured log directory does not exist")
+                    .build();
+        }
+        catch (NotDirectoryException e) {
+            return Response.status(Status.INTERNAL_SERVER_ERROR)
+                    .entity("Pre-configured log directory is not a directory")
+                    .build();
+        }
+        catch (IOException e) {
+            return Response.status(Status.INTERNAL_SERVER_ERROR)
+                    .entity("IOException getting file list")
+                    .build();
+        }
+        return Response.status(Status.OK).entity(fileList).build();
+    }
 
     /**
      * Method called in response to GET request
@@ -81,10 +113,17 @@ public final class LogsHandler
         Instant start = startDate.get();
         Instant end = endDate.get();
 
-        if (start != null && end != null && maxEntries != null) {
-            return Response.status(Status.BAD_REQUEST)
-                    .entity("Can not provide date range and limit number of entries")
-                    .build();
+        if (start != null && end != null) {
+            if (maxEntries != null) {
+                return Response.status(Status.BAD_REQUEST)
+                        .entity("Can not provide date range and limit number of entries")
+                        .build();
+            }
+            else if (start.isAfter(end)) {
+                return Response.status(Status.BAD_REQUEST)
+                        .entity("End of date range can not be before start")
+                        .build();
+            }
         }
 
         if (!logLevel.isValid()) {
@@ -93,13 +132,13 @@ public final class LogsHandler
         }
         Level level = logLevel.get();
 
-        Path filePath = LOG_DIRECTORY.resolve(filename);
-        if (!Files.isRegularFile(filePath)) {
-            return Response.status(Status.NOT_FOUND)
-                    .entity(Files.exists(filePath)
-                            ? "Not a regular file"
-                            : "File not found")
-                    .build();
+        Path filePath;
+        try {
+            filePath = LOG_DIRECTORY.resolve(filename);
+        }
+        catch (InvalidPathException e) {
+            return Response.status(Status.BAD_REQUEST)
+                    .entity("Invalid file name").build();
         }
 
         LogFilter logFilter;
@@ -107,17 +146,25 @@ public final class LogsHandler
             logFilter = LogFilter.builder()
                     .setFile(filePath)
                     .setPattern(LOG_REGEX)
+                    .setDefaultEntry(DEFAULT_ENTRY)
                     .setLineSeparator("\r\n")
-                    .addGroupFilter(DATE_GROUP, getFilter(start, end))
-                    .addGroupFilter(LEVEL_GROUP, getFilter(level))
                     .setCapacity(maxEntries == null ? Integer.MAX_VALUE : maxEntries)
                     .keepFirst(start != null)
+                    .addGroupFilter(DATE_GROUP, getFilter(start, end))
+                    .addGroupFilter(LEVEL_GROUP, getFilter(level))
                     .build();
         }
         catch (FileNotFoundException e) {
-            // TODO: Log exception, log file disappeared since check for 404
+            return Response.status(Status.NOT_FOUND)
+                    .entity(Files.exists(filePath)
+                            ? "Not a regular file"
+                            : "File not found")
+                    .build();
+        }
+        catch (IllegalArgumentException
+                | IndexOutOfBoundsException | DateTimeParseException e) {
             return Response.status(Status.INTERNAL_SERVER_ERROR)
-                    .entity("File disappeared while processing operation").build();
+                    .entity("Log parser configured incorrectly").build();
         }
 
         Stream<String> logEntries;
@@ -149,9 +196,13 @@ public final class LogsHandler
         }
         Instant end = endDate.get();
 
-        Path filePath = LOG_DIRECTORY.resolve(filename);
-        if (!Files.isRegularFile(filePath)) {
-            return Response.status(Status.NOT_FOUND).entity("Invalid log file").build();
+        Path filePath;
+        try {
+            filePath = LOG_DIRECTORY.resolve(filename);
+        }
+        catch (InvalidPathException e) {
+            return Response.status(Status.BAD_REQUEST)
+                    .entity("Invalid file name").build();
         }
 
         if (end != null) {
@@ -164,9 +215,8 @@ public final class LogsHandler
                 return Response.status(Status.NO_CONTENT).build();
             }
             catch (IOException e) {
-                // TODO: Log exception, log file disappeared since check for 404
                 return Response.status(Status.INTERNAL_SERVER_ERROR)
-                        .entity("File disappeared while processing operation").build();
+                        .entity("IOException while writing file").build();
             }
         }
     }
@@ -181,13 +231,21 @@ public final class LogsHandler
             logFilter = LogFilter.builder()
                     .setFile(filePath)
                     .setPattern(LOG_REGEX)
+                    .setDefaultEntry(DEFAULT_ENTRY)
                     .addGroupFilter(DATE_GROUP, getFilter(end, null))
                     .build();
         }
         catch (FileNotFoundException e) {
-            // TODO: Log exception, log file disappeared since check for 404
+            return Response.status(Status.NOT_FOUND)
+                    .entity(Files.exists(filePath)
+                            ? "Not a regular file"
+                            : "File not found")
+                    .build();
+        }
+        catch (IllegalArgumentException
+                | IndexOutOfBoundsException | DateTimeParseException e) {
             return Response.status(Status.INTERNAL_SERVER_ERROR)
-                    .entity("File disappeared while processing operation").build();
+                    .entity("Log parser configured incorrectly").build();
         }
 
         Stream<String> logEntries;

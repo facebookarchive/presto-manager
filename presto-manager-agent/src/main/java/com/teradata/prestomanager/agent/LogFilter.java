@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
-import java.util.ConcurrentModificationException;
 import java.util.Deque;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -43,39 +42,51 @@ public class LogFilter
 {
     private final Path file;
     private final Pattern logPattern;
+    private final String defaultEntry;
     private final String lineSeparator;
     private final ImmutableMap<String, Predicate<String>> namedGroupFilters;
-    private final ImmutableMap<Integer, Predicate<String>> numberedGroupFilters;
     private final int maxEntries;
     private final boolean keepFirst;
 
-    private LogFilter(Path file, Pattern logPattern, String lineSeparator,
+    private LogFilter(Path file, Pattern logPattern,
+            String defaultEntry, String lineSeparator,
             Map<String, Predicate<String>> namedGroupFilters,
-            Map<Integer, Predicate<String>> numberedGroupFilters,
             int maxEntries, boolean keepFirst)
             throws FileNotFoundException
     {
         this.file = requireNonNull(file);
         this.logPattern = requireNonNull(logPattern);
+        this.defaultEntry = requireNonNull(defaultEntry);
         this.lineSeparator = requireNonNull(lineSeparator);
         this.namedGroupFilters = ImmutableMap.copyOf(requireNonNull(namedGroupFilters));
-        this.numberedGroupFilters = ImmutableMap.copyOf(requireNonNull(numberedGroupFilters));
         this.maxEntries = maxEntries;
         this.keepFirst = keepFirst;
-        if (!Files.exists(file)) {
+        if (!Files.isRegularFile(file)) {
             throw new FileNotFoundException(file.toString());
+        }
+
+        Matcher matcher = logPattern.matcher(defaultEntry);
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException(
+                    "Default entry does not match log entry pattern");
+        }
+        try {
+            for (Map.Entry<String, Predicate<String>> f
+                    : namedGroupFilters.entrySet()) {
+                matcher.group(f.getKey());
+            }
+        }
+        catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                    "Invalid capturing group in log filter", e);
         }
     }
 
     public Stream<String> streamEntries()
-            throws IOException, ConcurrentModificationException
+            throws IOException
     {
-        LogEntries logEntryBuilders = Files.lines(file).collect(
-                LogEntries::new,
-                LogEntries::addLine,
-                (a, b) -> {
-                    throw new ConcurrentModificationException();
-                });
+        LogEntries logEntryBuilders = new LogEntries();
+        Files.lines(file).forEachOrdered(logEntryBuilders::addLine);
         return logEntryBuilders.streamEntries().map(StringJoiner::toString);
     }
 
@@ -94,20 +105,23 @@ public class LogFilter
     {
         private Path file;
         private Pattern logPattern;
+        private String defaultEntry;
         private String lineSeparator = System.getProperty("line.separator");
-        private ImmutableMap.Builder<String, Predicate<String>> namedGroupFilters = ImmutableMap.builder();
-        private ImmutableMap.Builder<Integer, Predicate<String>> numberedGroupFilters = ImmutableMap.builder();
+        private ImmutableMap.Builder<String, Predicate<String>> namedGroupFilters;
         private int maxEntries = Integer.MAX_VALUE;
-        private boolean keepFirst = false;
+        private boolean keepFirst;
 
-        private Builder() {}
+        private Builder()
+        {
+            namedGroupFilters = ImmutableMap.builder();
+        }
 
         public LogFilter build()
                 throws FileNotFoundException
         {
-            return new LogFilter(file, logPattern, lineSeparator,
+            return new LogFilter(file, logPattern,
+                    defaultEntry, lineSeparator,
                     namedGroupFilters.build(),
-                    numberedGroupFilters.build(),
                     maxEntries, keepFirst);
         }
 
@@ -127,25 +141,28 @@ public class LogFilter
         }
 
         /**
-         * Add a filter to apply to a named capturing group
-         * in the regular expression for log file lines
+         * Set an entry that will be inserted if the first entry does
+         * not match the entry pattern.
+         *
+         */
+        public Builder setDefaultEntry(String entry)
+        {
+            defaultEntry = requireNonNull(entry);
+            return this;
+        }
+
+        /**
+         * Add a filter to apply to a named capturing group in the
+         * regular expression for log file lines.
+         *
+         * A filter of `s -> true' will not have the same effect
+         * as having no filter; only if there is no filter will
+         * a mis-formatted initial log entry be included in results.
          */
         public Builder addGroupFilter(String groupName, Predicate<String> filter)
         {
             namedGroupFilters.put(
                     requireNonNull(groupName),
-                    requireNonNull(filter));
-            return this;
-        }
-
-        /**
-         * Add a filter to apply to a capturing group in
-         * the regular expression for log file lines
-         */
-        public Builder addGroupFilter(Integer groupNumber, Predicate<String> filter)
-        {
-            numberedGroupFilters.put(
-                    requireNonNull(groupNumber),
                     requireNonNull(filter));
             return this;
         }
@@ -204,45 +221,52 @@ public class LogFilter
          *
          * If the string does not match {@link #logPattern}, it will be
          * appended to the previous entry. If there is no previous entry, a new
-         * entry will be created only if entries are not being filtered.
+         * entry will be created (using the default entry) only if the default
+         * entry matches the filters.
          *
          * If {@link #maxEntries} is non-null and the deque contains that many
          * entries, the oldest will be removed before the new entry is added.
          */
         void addLine(String line)
         {
-            matcher.reset(line);
-            if (matcher.matches()) {
-                /* Apply all filters */
-                boolean passing = true;
-                for (ImmutableMap.Entry<String, Predicate<String>> f
-                        : namedGroupFilters.entrySet()) {
-                    passing = passing && f.getValue().test(matcher.group(f.getKey()));
-                }
-                for (ImmutableMap.Entry<Integer, Predicate<String>> f
-                        : numberedGroupFilters.entrySet()) {
-                    passing = passing && f.getValue().test(matcher.group(f.getKey()));
-                }
-
-                if (passing) {
+            if (matcher.reset(line).matches()) {
+                if (checkFilters(matcher)) {
                     keptLastLine = addNewEntry(line);
                 }
                 else {
                     keptLastLine = false;
                 }
             }
-            else if (keptLastLine == null
-                    && namedGroupFilters.isEmpty() && numberedGroupFilters.isEmpty()) {
-                // If the first line does not match the pattern and there are no filters,
-                // use the line as a new entry.
-                keptLastLine = addNewEntry(line);
+            else if (keptLastLine == null) {
+                if (matcher.reset(defaultEntry).matches() && checkFilters(matcher)) {
+                    keptLastLine = addNewEntry(defaultEntry);
+                    keptLastLine = addToLast(line);
+                }
+                else {
+                    keptLastLine = false;
+                }
             }
-            else if (keptLastLine != null && keptLastLine) {
+            else if (keptLastLine) {
                 keptLastLine = addToLast(line);
             }
             else {
                 keptLastLine = false;
             }
+        }
+
+        /**
+         * Checks if the string currently in the given matcher
+         * passes all of the filters. The matcher must already
+         * matching state.
+         */
+        private boolean checkFilters(Matcher matcher)
+        {
+            boolean passing = true;
+            for (ImmutableMap.Entry<String, Predicate<String>> f
+                    : namedGroupFilters.entrySet()) {
+                passing = passing && f.getValue().test(matcher.group(f.getKey()));
+            }
+            return passing;
         }
 
         /**
