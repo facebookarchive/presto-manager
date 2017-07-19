@@ -15,9 +15,10 @@ package com.teradata.prestomanager.agent;
 
 import com.teradata.prestomanager.common.JaxrsParameter;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -38,6 +39,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.teradata.prestomanager.common.SimpleResponses.badRequest;
+import static com.teradata.prestomanager.common.SimpleResponses.notFound;
+import static com.teradata.prestomanager.common.SimpleResponses.serverError;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -45,7 +49,9 @@ import static java.util.Objects.requireNonNull;
  */
 public final class LogsHandler
 {
-    // TODO: Make _all_ of these 'private static final' values configurable
+    private static final Logger LOG = LogManager.getLogger(LogsHandler.class);
+
+    // TODO: Make most of these 'private static final' values configurable
     private static final Path LOG_DIRECTORY = Paths.get("/var/log/presto");
     private static final Level LOG_ALL = Level.ALL;
 
@@ -78,21 +84,18 @@ public final class LogsHandler
                     .collect(Collectors.joining("\r\n"));
         }
         catch (NoSuchFileException e) {
-            return Response.status(Status.INTERNAL_SERVER_ERROR)
-                    .entity("Pre-configured log directory does not exist")
-                    .build();
+            LOG.error("Configured log directory does not exist", e);
+            return serverError("Configured log directory does not exist");
         }
         catch (NotDirectoryException e) {
-            return Response.status(Status.INTERNAL_SERVER_ERROR)
-                    .entity("Pre-configured log directory is not a directory")
-                    .build();
+            LOG.error("Configured log directory is not a directory", e);
+            return serverError("Configured log directory is not a directory");
         }
         catch (IOException e) {
-            return Response.status(Status.INTERNAL_SERVER_ERROR)
-                    .entity("IOException getting file list")
-                    .build();
+            LOG.warn("IOException getting file list", e);
+            return serverError("IOException getting file list");
         }
-        return Response.status(Status.OK).entity(fileList).build();
+        return Response.ok(fileList).build();
     }
 
     /**
@@ -107,28 +110,24 @@ public final class LogsHandler
         requireNonNull(logLevel);
 
         if (!startDate.isValid() || !endDate.isValid()) {
-            return Response.status(Status.BAD_REQUEST)
-                    .entity("Invalid date format").build();
+            return badRequest("Invalid date format");
         }
         Instant start = startDate.get();
         Instant end = endDate.get();
 
         if (start != null && end != null) {
             if (maxEntries != null) {
-                return Response.status(Status.BAD_REQUEST)
-                        .entity("Can not provide date range and limit number of entries")
-                        .build();
+                return badRequest(
+                        "Can not provide date range and limit number of entries");
             }
             else if (start.isAfter(end)) {
-                return Response.status(Status.BAD_REQUEST)
-                        .entity("End of date range can not be before start")
-                        .build();
+                return badRequest(
+                        "End of date range (%s) is before start (%s)", start, end);
             }
         }
 
         if (!logLevel.isValid()) {
-            return Response.status(Status.BAD_REQUEST)
-                    .entity("Invalid log level").build();
+            return badRequest("Invalid log level");
         }
         Level level = logLevel.get();
 
@@ -137,8 +136,7 @@ public final class LogsHandler
             filePath = LOG_DIRECTORY.resolve(filename);
         }
         catch (InvalidPathException e) {
-            return Response.status(Status.BAD_REQUEST)
-                    .entity("Invalid file name").build();
+            return badRequest("Invalid file name");
         }
 
         LogFilter logFilter;
@@ -155,16 +153,17 @@ public final class LogsHandler
                     .build();
         }
         catch (FileNotFoundException e) {
-            return Response.status(Status.NOT_FOUND)
-                    .entity(Files.exists(filePath)
-                            ? "Not a regular file"
-                            : "File not found")
-                    .build();
+            return notFound(Files.exists(filePath)
+                    ? "Not a regular file"
+                    : "File not found");
         }
-        catch (IllegalArgumentException
-                | IndexOutOfBoundsException | DateTimeParseException e) {
-            return Response.status(Status.INTERNAL_SERVER_ERROR)
-                    .entity("Log parser configured incorrectly").build();
+        catch (IllegalArgumentException e) {
+            LOG.error("Internal: Capturing group not present in log entry pattern", e);
+            return serverError("Log parser configured incorrectly");
+        }
+        catch (DateTimeParseException e) {
+            LOG.error("Internal: Default log entry has invalid date", e);
+            return serverError("Log parser configured incorrectly");
         }
 
         Stream<String> logEntries;
@@ -172,17 +171,17 @@ public final class LogsHandler
             logEntries = logFilter.streamEntries();
         }
         catch (IOException e) {
-            return Response.status(Status.INTERNAL_SERVER_ERROR)
-                    .entity("IOException while reading file").build();
+            LOG.warn("IOException while reading file", e);
+            return serverError("IOException while reading file");
         }
         catch (DateTimeParseException e) {
-            return Response.status(Status.INTERNAL_SERVER_ERROR)
-                    .entity("Attempted to read malformed date in log").build();
+            LOG.warn("Date in log file has invalid format", e);
+            return serverError("Date in log file has invalid format");
         }
 
         String result = logEntries.collect(Collectors.joining("\r\n"));
 
-        return Response.status(Status.OK).entity(result).build();
+        return Response.ok(result).build();
     }
 
     /**
@@ -191,8 +190,7 @@ public final class LogsHandler
     public static Response deleteLogs(String filename, JaxrsParameter<Instant> endDate)
     {
         if (!endDate.isValid()) {
-            return Response.status(Status.BAD_REQUEST)
-                    .entity("Invalid date format").build();
+            return badRequest("Invalid date format");
         }
         Instant end = endDate.get();
 
@@ -201,8 +199,7 @@ public final class LogsHandler
             filePath = LOG_DIRECTORY.resolve(filename);
         }
         catch (InvalidPathException e) {
-            return Response.status(Status.BAD_REQUEST)
-                    .entity("Invalid file name").build();
+            return badRequest("Invalid file name");
         }
 
         if (end != null) {
@@ -212,11 +209,11 @@ public final class LogsHandler
             try {
                 Files.write(filePath, new byte[0], StandardOpenOption.TRUNCATE_EXISTING);
                 // TODO: Use Status.ACCEPTED for asynchronous response
-                return Response.status(Status.NO_CONTENT).build();
+                return Response.noContent().build();
             }
             catch (IOException e) {
-                return Response.status(Status.INTERNAL_SERVER_ERROR)
-                        .entity("IOException while writing file").build();
+                LOG.warn("IOException while writing log file", e);
+                return serverError("IOException while writing log file");
             }
         }
     }
@@ -236,16 +233,17 @@ public final class LogsHandler
                     .build();
         }
         catch (FileNotFoundException e) {
-            return Response.status(Status.NOT_FOUND)
-                    .entity(Files.exists(filePath)
-                            ? "Not a regular file"
-                            : "File not found")
-                    .build();
+            return notFound(Files.exists(filePath)
+                    ? "Not a regular file"
+                    : "File not found");
         }
-        catch (IllegalArgumentException
-                | IndexOutOfBoundsException | DateTimeParseException e) {
-            return Response.status(Status.INTERNAL_SERVER_ERROR)
-                    .entity("Log parser configured incorrectly").build();
+        catch (IllegalArgumentException e) {
+            LOG.error("Internal: Capturing group not present in log entry pattern", e);
+            return serverError("Log parser configured incorrectly");
+        }
+        catch (DateTimeParseException e) {
+            LOG.error("Internal: Default log entry has invalid date", e);
+            return serverError("Log parser configured incorrectly");
         }
 
         Stream<String> logEntries;
@@ -253,24 +251,24 @@ public final class LogsHandler
             logEntries = logFilter.streamEntries();
         }
         catch (IOException e) {
-            return Response.status(Status.INTERNAL_SERVER_ERROR)
-                    .entity("IOException while reading file").build();
+            LOG.warn("IOException while reading file", e);
+            return serverError("IOException while reading file");
         }
         catch (DateTimeParseException e) {
-            return Response.status(Status.INTERNAL_SERVER_ERROR)
-                    .entity("Attempted to read malformed date in log").build();
+            LOG.warn("Date in log file has invalid format", e);
+            return serverError("Date in log file has invalid format");
         }
 
         try {
             Files.write(filePath, (Iterable<String>) logEntries::iterator);
         }
         catch (IOException e) {
-            return Response.status(Status.INTERNAL_SERVER_ERROR)
-                    .entity("IOException while writing file").build();
+            LOG.warn("IOException while writing file", e);
+            return serverError("IOException while writing file");
         }
 
         // TODO: Use Status.ACCEPTED for asynchronous response
-        return Response.status(Status.NO_CONTENT).build();
+        return Response.noContent().build();
     }
 
     private static Predicate<String> getFilter(Instant start, Instant end)

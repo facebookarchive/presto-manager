@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Class for filtering the contents of log files
- *
+ * <p>
  * Uses a regular expression to match log entries, and treats
  * non-matching lines as part of the entry on the previous line.
  *
@@ -97,9 +97,9 @@ public class LogFilter
 
     /**
      * A builder for creating {@link LogFilter LogFilters}.
-     *
+     * <p>
      * Builder instances can be safely reused; {@link #build()} may be called
-     *  multiple times to build multiple filters.
+     * multiple times to build multiple filters.
      */
     public static class Builder
     {
@@ -154,7 +154,7 @@ public class LogFilter
         /**
          * Add a filter to apply to a named capturing group in the
          * regular expression for log file lines.
-         *
+         * <p>
          * A filter of `s -> true' will not have the same effect
          * as having no filter; only if there is no filter will
          * a mis-formatted initial log entry be included in results.
@@ -218,12 +218,12 @@ public class LogFilter
 
         /**
          * Add a line from a log file to a deque of log entries
-         *
+         * <p>
          * If the string does not match {@link #logPattern}, it will be
          * appended to the previous entry. If there is no previous entry, a new
          * entry will be created (using the default entry) only if the default
          * entry matches the filters.
-         *
+         * <p>
          * If {@link #maxEntries} is non-null and the deque contains that many
          * entries, the oldest will be removed before the new entry is added.
          */
