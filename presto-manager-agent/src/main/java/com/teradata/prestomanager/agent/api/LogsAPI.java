@@ -21,6 +21,8 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -46,6 +48,8 @@ import java.time.temporal.ChronoField;
         date = "2017-06-23T09:53:13.549-04:00")
 public class LogsAPI
 {
+    private static final Logger LOG = LogManager.getLogger(LogsAPI.class);
+
     private static final DateTimeFormatter DATE_FORMAT = new DateTimeFormatterBuilder()
             .parseCaseInsensitive().parseStrict()
             .appendPattern("yyyy-MM-dd['T'HH:mm[:ss[")
@@ -64,6 +68,7 @@ public class LogsAPI
     @ApiResponses({@ApiResponse(code = 200, message = "Retrieved file list")})
     public Response getLogList()
     {
+        LOG.info("GET /logs");
         return LogsHandler.getLogList();
     }
 
@@ -82,6 +87,8 @@ public class LogsAPI
             @QueryParam("level") @ApiParam("Only get logs of this level") @DefaultValue("ALL") LevelParameter level,
             @QueryParam("n") @ApiParam("The maximum number of log entries to get") Integer maxEntries)
     {
+        LOG.info(formatParameters("GET /logs/%s ? from=[%s] & to=[%s] & level=[%s] & n=[%s]",
+                file, fromDate, toDate, level, maxEntries));
         return LogsHandler.getLogs(file, fromDate, toDate, level, maxEntries);
     }
 
@@ -97,6 +104,7 @@ public class LogsAPI
             @PathParam("file") @ApiParam("The name of a file") String file,
             @QueryParam("to") @ApiParam("Ignore logs after this date") @DefaultValue("DEFAULT") DateParameter toDate)
     {
+        LOG.info(formatParameters("GET /logs/%s ? to=[%s]", file, toDate));
         return LogsHandler.deleteLogs(file, toDate);
     }
 
@@ -142,5 +150,24 @@ public class LogsAPI
                 throw new ParseException();
             }
         }
+    }
+
+    /**
+     * Method with build-in formatting for {@link JaxrsParameter JaxrsParameters}
+     */
+    static String formatParameters(String format, Object... args)
+    {
+        for (int i = 0; i < args.length; ++i) {
+            if (args[i] instanceof JaxrsParameter) {
+                JaxrsParameter asParam = (JaxrsParameter) args[i];
+                if (!asParam.isValid()) {
+                    args[i] = "[INVALID]";
+                }
+                else {
+                    args[i] = asParam.get();
+                }
+            }
+        }
+        return String.format(format, args);
     }
 }
