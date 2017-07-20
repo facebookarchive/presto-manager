@@ -27,7 +27,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.inject.Singleton;
-import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -36,87 +35,99 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import static com.google.common.io.Files.getFileExtension;
-import static javax.ws.rs.client.Entity.text;
+import static com.teradata.prestomanager.agent.PackageApiUtils.isInstalled;
+import static com.teradata.prestomanager.agent.PackageApiUtils.isRunning;
+import static com.teradata.prestomanager.agent.PackageType.RPM;
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status.ACCEPTED;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.CONFLICT;
+import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 @Path("/package")
 @Api(description = "the package API")
 @Singleton
+// TODO: Add configuration to get package type from PM config file
 public final class PackageAPI
 {
     private static final Logger LOGGER = LogManager.getLogger(PackageAPI.class);
-    private static PackageType installedPackageType;
 
     @PUT
-    @Consumes({MediaType.TEXT_PLAIN})
-    @Produces({MediaType.TEXT_PLAIN})
+    @Consumes({TEXT_PLAIN})
+    @Produces({TEXT_PLAIN})
     @ApiOperation(value = "Install presto using rpm or tarball")
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request"),
-            @ApiResponse(code = 400, message = "Bad package format or Invalid url")
+            @ApiResponse(code = 400, message = "Invalid url"),
+            @ApiResponse(code = 409, message = "Presto is already installed.")
     })
-    public synchronized Response install(@NotNull @ApiParam("Url to fetch package") String locationToFetchPackage,
+    public synchronized Response install(@ApiParam("Url to fetch package") String urlToFetchPackage,
             @QueryParam("checkDependencies") @DefaultValue("true") @ApiParam("If false, disables dependency checking") boolean checkDependencies)
     {
-        LOGGER.debug("PUT /package  url: {} ; checkDependencies: {}", locationToFetchPackage, checkDependencies);
-        try {
-            installedPackageType = PackageType.valueOf(getFileExtension(locationToFetchPackage).toUpperCase());
-        }
-        catch (IllegalArgumentException e) {
-            LOGGER.error("Invalid package: {}. Package must be .tar.gz or .rpm", locationToFetchPackage, e);
-            return Response.status(BAD_REQUEST).entity(text("Invalid package type for presto-server. Package must be .tar.gz or .rpm")).build();
+        LOGGER.debug("PUT /package  url: {} ; checkDependencies: {}", urlToFetchPackage, checkDependencies);
+        if ("".equals(urlToFetchPackage)) {
+            LOGGER.error("Url is empty or null");
+            return Response.status(BAD_REQUEST).entity("Expected URL in the body").build();
         }
         try {
-            URL url = new URL(locationToFetchPackage);
-            new Thread(new PrestoAsynchronousCommand(new PrestoInstaller(installedPackageType, url, checkDependencies))).start();
+            if (isInstalled()) {
+                LOGGER.error("Presto is already installed.");
+                return Response.status(CONFLICT).entity("Presto is already installed.").build();
+            }
+            URL url = new URL(urlToFetchPackage);
+            new Thread(new PrestoAsynchronousCommand(new PrestoInstaller(RPM, url, checkDependencies))).start();
+        }
+        catch (PrestoManagerException e) {
+            LOGGER.error("Failed to ascertain whether presto is already installed.", e);
+            return Response.status(INTERNAL_SERVER_ERROR).entity("Failed to ascertain whether presto is already installed.").build();
         }
         catch (MalformedURLException e) {
-            LOGGER.error("Invalid url: {}", locationToFetchPackage, e);
-            return Response.status(BAD_REQUEST).entity(text("Invalid url")).build();
+            LOGGER.error("Invalid url: {}", urlToFetchPackage, e);
+            return Response.status(BAD_REQUEST).entity("Invalid url").build();
         }
-        return Response.status(ACCEPTED).entity(text("Check status to make sure that presto is installed")).build();
+        return Response.status(ACCEPTED).entity("Presto is being installed. " +
+                "Please check back later using the status api to make sure that installation succeeded.").build();
     }
 
     @POST
-    @Consumes({MediaType.TEXT_PLAIN})
-    @Produces({MediaType.TEXT_PLAIN})
+    @Consumes({TEXT_PLAIN})
+    @Produces({TEXT_PLAIN})
     @ApiOperation(value = "Upgrade presto")
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request"),
-            @ApiResponse(code = 400, message = "Bad package format or Invalid url")
+            @ApiResponse(code = 400, message = "Invalid url"),
+            @ApiResponse(code = 409, message = "Presto is running. Please stop Presto before beginning upgrade.")
     })
-    public synchronized Response upgrade(@NotNull @ApiParam("Url to fetch package") String locationToFetchPackage,
+    public synchronized Response upgrade(@ApiParam("Url to fetch package") String urlToFetchPackage,
             @QueryParam("checkDependencies") @DefaultValue("true") @ApiParam("If false, disables dependency checking") boolean checkDependencies)
     {
-        LOGGER.debug("POST /package  url: {} ; checkDependencies: {}", locationToFetchPackage, checkDependencies);
+        LOGGER.debug("POST /package  url: {} ; checkDependencies: {}", urlToFetchPackage, checkDependencies);
+        if ("".equals(urlToFetchPackage)) {
+            LOGGER.error("Url is empty or null");
+            return Response.status(BAD_REQUEST).entity("Expected URL in the body").build();
+        }
         try {
-            PackageType packageType = PackageType.valueOf(getFileExtension(locationToFetchPackage).toUpperCase());
-            if (installedPackageType != packageType) {
-                LOGGER.error("Package type mismatch. Presto installed using {} , but attempting to upgrade using {}", installedPackageType, packageType);
-                return Response.status(BAD_REQUEST).entity(text("Provided package format doesn't match the installed package format")).build();
+            if (isRunning()) {
+                LOGGER.error("Presto is running. Please stop Presto before beginning upgrade.");
+                return Response.status(CONFLICT).entity("Presto is running. Please stop Presto before beginning upgrade.").build();
             }
+            URL url = new URL(urlToFetchPackage);
+            new Thread(new PrestoAsynchronousCommand(new PrestoUpgrader(RPM, url, checkDependencies))).start();
         }
-        catch (IllegalArgumentException e) {
-            LOGGER.error("Invalid package: {}. Package must be .tar.gz or .rpm", locationToFetchPackage, e);
-            return Response.status(BAD_REQUEST).entity(text("Invalid package type for presto-server. Package must be .tar.gz or .rpm")).build();
-        }
-        try {
-            final URL url = new URL(locationToFetchPackage);
-            new Thread(new PrestoAsynchronousCommand(new PrestoUpgrader(installedPackageType, url, checkDependencies))).start();
+        catch (PrestoManagerException e) {
+            LOGGER.error("Failed to ascertain whether presto is running", e);
+            return Response.status(INTERNAL_SERVER_ERROR).entity("Failed to ascertain whether presto is running").build();
         }
         catch (MalformedURLException e) {
-            LOGGER.error("Invalid url: {}", locationToFetchPackage, e);
-            return Response.status(BAD_REQUEST).entity(text("Invalid url")).build();
+            LOGGER.error("Invalid url: {}", urlToFetchPackage, e);
+            return Response.status(BAD_REQUEST).entity("Invalid url").build();
         }
-        return Response.status(ACCEPTED).entity(text("Check status to make sure that presto is upgraded")).build();
+        return Response.status(ACCEPTED).entity("Presto is being upgraded.").build();
     }
 
     @DELETE
@@ -129,13 +140,9 @@ public final class PackageAPI
             @QueryParam("ignoreErrors") @DefaultValue("false") @ApiParam("If true, warnings are ignored during uninstall") boolean ignoreErrors)
     {
         LOGGER.debug("DELETE /package checkDependencies: {} ; ignoreErrors: {}", checkDependencies, ignoreErrors);
-        new Thread(new PrestoAsynchronousCommand(new PrestoUninstaller(installedPackageType, checkDependencies, ignoreErrors))).start();
-        return Response.status(ACCEPTED).entity(text("Presto is being uninstalled")).build();
-    }
-
-    public enum PackageType
-    {
-        RPM, TARBALL;
+        new Thread(new PrestoAsynchronousCommand(new PrestoUninstaller(RPM, checkDependencies, ignoreErrors))).start();
+        return Response.status(ACCEPTED).entity("Presto is being uninstalled. " +
+                "Please check back later using the status api to make sure that uninstallation succeeded.").build();
     }
 
     public class PrestoAsynchronousCommand
@@ -155,7 +162,7 @@ public final class PackageAPI
                 command.runCommand();
             }
             catch (PrestoManagerException e) {
-                LOGGER.error(e.getMessage(), e.getCause());
+                LOGGER.error(e.getMessage(), e.getCause(), e);
             }
             catch (Exception e) {
                 LOGGER.error("Unhandled exception", e);

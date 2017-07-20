@@ -61,19 +61,17 @@ public final class CommandExecutor
         processBuilder.redirectErrorStream(true);
         try {
             Process process = processBuilder.start();
-            try (InputStream processStream = process.getInputStream()) {
-                new Thread(() -> {
-                    try {
-                        LOGGER.info("Output from command: {}\n{}", commandString, new String(ByteStreams.toByteArray(processStream)));
-                    }
-                    catch (IOException e) {
-                        LOGGER.error("Failed to log the process output");
-                    }
-                }).start();
-                if (!process.waitFor(timeout, TimeUnit.SECONDS)) {
-                    process.destroyForcibly();
-                    throw new PrestoManagerException(format("Command timed out: %s", commandString));
+            new Thread(() -> {
+                try (InputStream processStream = process.getInputStream()) {
+                    LOGGER.info("Output from command: {}\n{}", commandString, new String(ByteStreams.toByteArray(processStream)));
                 }
+                catch (IOException e) {
+                    LOGGER.error("Failed to log the process output", e);
+                }
+            }).start();
+            if (!process.waitFor(timeout, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                throw new PrestoManagerException(format("Command timed out: %s", commandString));
             }
             return process.exitValue();
         }

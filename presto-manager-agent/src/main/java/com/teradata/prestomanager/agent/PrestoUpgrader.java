@@ -13,36 +13,33 @@
  */
 package com.teradata.prestomanager.agent;
 
-import com.teradata.prestomanager.agent.api.PackageAPI.PackageType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URL;
 
 import static com.teradata.prestomanager.agent.CommandExecutor.executeCommand;
-import static java.io.File.createTempFile;
+import static com.teradata.prestomanager.agent.PackageApiUtils.checkRpmPackage;
+import static com.teradata.prestomanager.agent.PackageApiUtils.fetchFileFromUrl;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static org.apache.commons.io.FileUtils.copyURLToFile;
 
 public class PrestoUpgrader
         implements PrestoCommand
 {
     private static final Logger LOGGER = LogManager.getLogger(PrestoUpgrader.class);
-    private static final int CONNECTION_TIMEOUT = 1000000;
-    private static final int READ_TIMEOUT = 10000;
+    private static final int SUBPROCESS_TIMEOUT = 150;
 
     private final PackageType packageType;
     private final URL urlToFetchPackage;
-    private final boolean disableDependencyChecking;
+    private final boolean checkDependencies;
 
-    public PrestoUpgrader(PackageType packageType, URL urlToFetchPackage, boolean disableDependencyChecking)
+    public PrestoUpgrader(PackageType packageType, URL urlToFetchPackage, boolean checkDependencies)
     {
         this.packageType = requireNonNull(packageType);
         this.urlToFetchPackage = requireNonNull(urlToFetchPackage);
-        this.disableDependencyChecking = requireNonNull(disableDependencyChecking);
+        this.checkDependencies = requireNonNull(checkDependencies);
     }
 
     public void runCommand()
@@ -50,20 +47,15 @@ public class PrestoUpgrader
     {
         switch (packageType) {
             case RPM:
-                if (executeCommand("service", "presto", "status") == 0) {
-                    throw new PrestoManagerException("Presto is running");
-                }
-                File tempFile;
+                File tempFile = fetchFileFromUrl(urlToFetchPackage);
                 try {
-                    LOGGER.debug("Downloading package from url: {}", urlToFetchPackage);
-                    tempFile = createTempFile("presto", ".rpm");
-                    copyURLToFile(urlToFetchPackage, tempFile, CONNECTION_TIMEOUT, READ_TIMEOUT);
+                    upgradeUsingRpm(tempFile.toString(), checkDependencies);
                 }
-                catch (IOException e) {
-                    throw new PrestoManagerException(format("Failed to download file from url %s", urlToFetchPackage), e);
+                finally {
+                    if (!tempFile.delete()) {
+                        LOGGER.warn("Failed to delete the tempFile: {}", tempFile.toString());
+                    }
                 }
-                upgradeUsingRpm(tempFile.toString(), disableDependencyChecking);
-                tempFile.delete();
                 break;
             case TARBALL:
                 // TODO: Add tarball installation
@@ -73,18 +65,17 @@ public class PrestoUpgrader
         }
     }
 
-    private static void upgradeUsingRpm(String pathToRpm, boolean disableDependencyChecking)
+    private static void upgradeUsingRpm(String pathToRpm, boolean checkDependencies)
             throws PrestoManagerException
     {
-        int checkRpm = executeCommand("rpm", "-Kv", "--nosignature", pathToRpm);
-        if (checkRpm != 0) {
-            throw new PrestoManagerException("Corrupted RPM", checkRpm);
+        checkRpmPackage(pathToRpm);
+        int upgradeRpm;
+        if (checkDependencies) {
+            upgradeRpm = executeCommand(SUBPROCESS_TIMEOUT, "sudo", "rpm", "-U", pathToRpm);
         }
-        String nodeps = "";
-        if (disableDependencyChecking) {
-            nodeps = "--nodeps";
+        else {
+            upgradeRpm = executeCommand(SUBPROCESS_TIMEOUT, "sudo", "rpm", "-U", "--nodeps", pathToRpm);
         }
-        int upgradeRpm = executeCommand(150, "sudo", "rpm", "-U", nodeps, pathToRpm);
         if (upgradeRpm != 0) {
             throw new PrestoManagerException("Failed to upgrade presto", upgradeRpm);
         }

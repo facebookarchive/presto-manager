@@ -13,7 +13,6 @@
  */
 package com.teradata.prestomanager.agent;
 
-import com.teradata.prestomanager.agent.api.PackageAPI.PackageType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,6 +24,9 @@ public class PrestoUninstaller
         implements PrestoCommand
 {
     private static final Logger LOGGER = LogManager.getLogger(PrestoUninstaller.class);
+    private static final String PRESTO_PACKAGE = "presto-server-rpm";
+    private static final int SUBPROCESS_TIMEOUT = 90;
+
     private final PackageType packageType;
     private final boolean disableDependencyChecking;
     private final boolean ignoreNotInstalled;
@@ -41,25 +43,25 @@ public class PrestoUninstaller
     {
         switch (packageType) {
             case RPM:
-                uninstallUsingRpm("presto-server-rpm", disableDependencyChecking, ignoreNotInstalled);
+                uninstallUsingRpm(disableDependencyChecking, ignoreNotInstalled);
                 break;
             case TARBALL:
-                // TODO: Add tarball installation
+                // TODO: Add tarball uninstallation
                 throw new UnsupportedOperationException("Tarball uninstall is not supported");
             default:
                 throw new IllegalArgumentException(format("Unsupported package type %s", packageType));
         }
     }
 
-    private static void uninstallUsingRpm(String packageName, boolean checkDependencies, boolean ignoreErrors)
+    private static void uninstallUsingRpm(boolean checkDependencies, boolean ignoreErrors)
             throws PrestoManagerException
     {
-        int checkPackageInstalled = executeCommand("sudo", "rpm", "-q", packageName);
+        int checkPackageInstalled = executeCommand("sudo", "rpm", "-q", PRESTO_PACKAGE);
         if (checkPackageInstalled != 0) {
             if (!ignoreErrors) {
-                throw new PrestoManagerException(format("Package %s is not installed", packageName), checkPackageInstalled);
+                throw new PrestoManagerException(format("Package '%s' is not installed", PRESTO_PACKAGE), checkPackageInstalled);
             }
-            LOGGER.warn("Package {} is not installed; Process exited with return value: {}", packageName, checkPackageInstalled);
+            LOGGER.warn("Package '{}' is not installed; Process exited with return value: {}", PRESTO_PACKAGE, checkPackageInstalled);
             return;
         }
         if (executeCommand("service", "presto", "status") == 0) {
@@ -68,12 +70,15 @@ public class PrestoUninstaller
             }
             LOGGER.warn("Presto is running");
         }
+        int uninstallPackage;
+        if (checkDependencies) {
+            uninstallPackage = executeCommand(SUBPROCESS_TIMEOUT, "sudo", "rpm", "-e", PRESTO_PACKAGE);
+        }
         else {
-            String nodeps = checkDependencies ? "" : "--nodeps";
-            int uninstallPackage = executeCommand(90, "sudo", "rpm", "-e", nodeps, packageName);
-            if (uninstallPackage != 0) {
-                throw new PrestoManagerException(format("Failed to uninstall package %s", packageName), uninstallPackage);
-            }
+            uninstallPackage = executeCommand(SUBPROCESS_TIMEOUT, "sudo", "rpm", "-e", "--nodeps", PRESTO_PACKAGE);
+        }
+        if (uninstallPackage != 0) {
+            throw new PrestoManagerException(format("Failed to uninstall package: %s", PRESTO_PACKAGE), uninstallPackage);
         }
         LOGGER.debug("Successfully uninstalled presto");
     }
