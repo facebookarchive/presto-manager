@@ -32,24 +32,27 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static java.util.stream.Collectors.collectingAndThen;
 
-//TODO: Add logger
 public final class AgentFileUtils
 {
     private AgentFileUtils() {}
 
     public static List<String> getFileNameList(Path path)
+            throws IOException
     {
-        File folder = path.toFile();
-        checkArgument(folder.isDirectory(), "%s is not a directory", path);
-        ImmutableList.Builder<String> fileNames = ImmutableList.builder();
-        for (int i = 0; i < folder.list().length; i++) {
-            fileNames.add(folder.list()[i]);
+        checkArgument(path.toFile().isDirectory(), "%s is not a directory", path);
+        ImmutableList<String> fileNames;
+        try (Stream<Path> stream = Files.list(path)) {
+            fileNames = stream.filter(Files::isRegularFile).map(Path::getFileName).map(Path::toString)
+                    .collect(collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
         }
-        return fileNames.build();
+        return fileNames;
     }
 
     public static String getFile(Path path)

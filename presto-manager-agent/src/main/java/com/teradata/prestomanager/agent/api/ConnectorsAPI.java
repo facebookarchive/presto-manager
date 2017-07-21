@@ -42,7 +42,7 @@ import java.nio.file.Paths;
 @Singleton
 public final class ConnectorsAPI
 {
-    private static final APIFileHandler apiFileHandler = new APIFileHandler(Paths.get("../presto/presto-main/etc/catalogs"));
+    private static final APIFileHandler apiFileHandler = new APIFileHandler(Paths.get("/etc/presto/catalog"));
     private static final Logger LOGGER = LogManager.getLogger(ConnectorsAPI.class);
 
     @GET

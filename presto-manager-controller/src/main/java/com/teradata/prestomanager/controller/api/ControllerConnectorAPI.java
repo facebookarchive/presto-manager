@@ -14,7 +14,6 @@
 package com.teradata.prestomanager.controller.api;
 
 import com.teradata.prestomanager.common.ApiRequester;
-import org.eclipse.jetty.http.HttpMethod;
 
 import javax.inject.Singleton;
 import javax.ws.rs.DELETE;
