@@ -50,6 +50,10 @@ public class APIFileHandler
             LOGGER.error("{} Not a directory", baseDir.toString(), e);
             return Response.status(Status.NOT_FOUND).build();
         }
+        catch (IOException e) {
+            LOGGER.error("Failed to retrieve the list of file names from directory: {}", baseDir.toString());
+            return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     public Response getFile(String path)

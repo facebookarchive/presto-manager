@@ -23,6 +23,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.inject.Singleton;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -42,11 +43,11 @@ import java.nio.file.Paths;
 @Singleton
 public final class ConfigAPI
 {
-    private static final APIFileHandler apiFileHandler = new APIFileHandler(Paths.get("../presto/presto-main/etc"));
+    private static final APIFileHandler apiFileHandler = new APIFileHandler(Paths.get("/etc/presto"));
     private static final Logger LOGGER = LogManager.getLogger(ConfigAPI.class);
 
     @GET
-    @Produces({"text/plain"})
+    @Produces({MediaType.TEXT_PLAIN})
     @ApiOperation(value = "Get available configuration files")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved configuration", response = String.class)})
@@ -72,6 +73,7 @@ public final class ConfigAPI
 
     @POST
     @Path("/{file}")
+    @Consumes({MediaType.TEXT_PLAIN})
     @ApiOperation(value = "Replace this file with the file at the given URL")
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request"),

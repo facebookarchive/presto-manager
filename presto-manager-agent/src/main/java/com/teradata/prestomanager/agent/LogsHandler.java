@@ -43,7 +43,7 @@ import static java.util.Objects.requireNonNull;
 public final class LogsHandler
 {
     // TODO: Make _all_ of these 'private static final' values configurable
-    private static final Path LOG_DIRECTORY = Paths.get("/tmp", "presto", "logs");
+    private static final Path LOG_DIRECTORY = Paths.get("/var/log/presto");
     private static final Level LOG_ALL = Level.ALL;
 
     private static final DateTimeFormatter DATE_FORMAT = new DateTimeFormatterBuilder()
