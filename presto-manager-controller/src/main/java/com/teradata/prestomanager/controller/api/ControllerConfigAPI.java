@@ -13,12 +13,7 @@
  */
 package com.teradata.prestomanager.controller.api;
 
-import com.google.gson.Gson;
-import com.teradata.prestomanager.controller.NodeSet;
 import com.teradata.prestomanager.common.ApiRequester;
-import com.teradata.prestomanager.controller.ApiScope;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Singleton;
 import javax.ws.rs.DELETE;
@@ -32,14 +27,9 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
-import static com.teradata.prestomanager.common.ExtendedStatus.MULTI_STATUS;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+import static com.teradata.prestomanager.controller.RequestDispatcher.forwardRequest;
 import static org.eclipse.jetty.http.HttpMethod.DELETE;
 import static org.eclipse.jetty.http.HttpMethod.GET;
 import static org.eclipse.jetty.http.HttpMethod.POST;
@@ -48,21 +38,17 @@ import static org.eclipse.jetty.http.HttpMethod.POST;
 @Singleton
 public class ControllerConfigAPI
 {
-    private static final Logger LOGGER = LogManager.getLogger(ControllerConfigAPI.class);
-    private NodeSet nodeSet = NodeSet.getInstance();
-
     @GET
     @Produces({MediaType.TEXT_PLAIN})
     public Response getConfig(@QueryParam("scope") String scope,
             @QueryParam("nodeId") List<Integer> nodeId)
     {
         ApiRequester apiRequester = ApiRequester.builder(ControllerConfigAPI.class)
-                .pathMethod("getConfig")
                 .httpMethod(GET)
                 .accept(MediaType.TEXT_PLAIN)
                 .build();
 
-        return getResponseFromRequest(scope, apiRequester, nodeId);
+        return forwardRequest(scope, apiRequester, nodeId);
     }
 
     @GET
@@ -80,7 +66,7 @@ public class ControllerConfigAPI
                 .accept(MediaType.TEXT_PLAIN)
                 .build();
 
-        return getResponseFromRequest(scope, apiRequester, nodeId);
+        return forwardRequest(scope, apiRequester, nodeId);
     }
 
     @GET
@@ -100,15 +86,15 @@ public class ControllerConfigAPI
                 .accept(MediaType.TEXT_PLAIN)
                 .build();
 
-        return getResponseFromRequest(scope, apiRequester, nodeId);
+        return forwardRequest(scope, apiRequester, nodeId);
     }
 
     @POST
     @Path("/{file}")
     @Produces({MediaType.TEXT_PLAIN})
     public Response setConfigFileByURL(
-            @PathParam("file") String file,
             String url,
+            @PathParam("file") String file,
             @QueryParam("scope") String scope,
             @QueryParam("nodeId") List<Integer> nodeId)
     {
@@ -120,7 +106,7 @@ public class ControllerConfigAPI
                 .entity(Entity.entity(url, MediaType.TEXT_PLAIN))
                 .build();
 
-        return getResponseFromRequest(scope, apiRequester, nodeId);
+        return forwardRequest(scope, apiRequester, nodeId);
     }
 
     @DELETE
@@ -138,44 +124,6 @@ public class ControllerConfigAPI
                 .accept(MediaType.TEXT_PLAIN)
                 .build();
 
-        return getResponseFromRequest(scope, apiRequester, nodeId);
-    }
-
-    private Response getResponseFromRequest(String scope, ApiRequester apiRequester, Collection<Integer> nodeId)
-    {
-        if (((scope != null) && (!nodeId.isEmpty())) || (scope == null && nodeId.isEmpty())) {
-            LOGGER.error("Invalid parameters");
-            return Response.status(BAD_REQUEST).entity("Invalid parameters").build();
-        }
-
-        ApiScope apiScope;
-        try {
-            apiScope = ApiScope.fromString(scope);
-        }
-        catch (IllegalArgumentException e) {
-            LOGGER.error("Invalid scope");
-            return Response.status(BAD_REQUEST).entity("Invalid scope").build();
-        }
-
-        Collection<URI> uriCollection;
-        try {
-            uriCollection = nodeId.isEmpty() ? nodeSet.getUris(apiScope) : nodeSet.getUrisByIds(nodeId);
-        }
-        catch (IllegalArgumentException e) {
-            LOGGER.error("Invalid or duplicate node ID");
-            return Response.status(BAD_REQUEST).entity("Invalid or duplicate node ID").build();
-        }
-
-        if (apiScope == ApiScope.COORDINATOR && uriCollection.size() != 1) {
-            LOGGER.error("Number of coordinator is not 1");
-            return Response.status(INTERNAL_SERVER_ERROR).entity("Number of coordinator is not 1").build();
-        }
-
-        List<Response> responseList = new ArrayList<>();
-        for (URI uri : uriCollection) {
-            responseList.add(apiRequester.send(uri));
-        }
-        return Response.status(MULTI_STATUS)
-                .entity(new Gson().toJson(responseList)).type(MediaType.APPLICATION_JSON).build();
+        return forwardRequest(scope, apiRequester, nodeId);
     }
 }
