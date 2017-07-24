@@ -100,6 +100,7 @@ public final class ApiRequester
 
         private Builder(Class<?> resource)
         {
+            this.resource = requireNonNull(resource);
             uriBuilder = UriBuilder.fromResource(resource);
         }
 
@@ -111,37 +112,37 @@ public final class ApiRequester
 
         public Builder pathMethod(String method)
         {
-            uriBuilder.path(resource, method);
+            uriBuilder.path(resource, requireNonNull(method));
             return this;
         }
 
         public Builder resolveTemplate(String name, Object value)
         {
-            uriBuilder.resolveTemplate(name, value);
+            uriBuilder.resolveTemplate(requireNonNull(name), requireNonNull(value));
             return this;
         }
 
         public Builder queryParam(String name, Object... values)
         {
-            uriBuilder.queryParam(name, values);
+            uriBuilder.queryParam(requireNonNull(name), requireNonNull(values));
             return this;
         }
 
         public Builder httpMethod(HttpMethod method)
         {
-            this.method = method;
+            this.method = requireNonNull(method);
             return this;
         }
 
         public Builder header(String name, String value)
         {
-            headers.add(name, value);
+            headers.add(requireNonNull(name), requireNonNull(value));
             return this;
         }
 
         public Builder accept(String mediaType)
         {
-            this.mediaType = mediaType;
+            this.mediaType = requireNonNull(mediaType);
             return this;
         }
 
