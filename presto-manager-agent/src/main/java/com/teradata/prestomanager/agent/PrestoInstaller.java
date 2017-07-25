@@ -17,18 +17,25 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static com.teradata.prestomanager.agent.CommandExecutor.executeCommand;
 import static com.teradata.prestomanager.agent.PackageApiUtils.checkRpmPackage;
 import static com.teradata.prestomanager.agent.PackageApiUtils.fetchFileFromUrl;
 import static java.lang.String.format;
+import static java.nio.file.Files.createDirectory;
+import static java.nio.file.Files.isDirectory;
+import static java.nio.file.Files.write;
 import static java.util.Objects.requireNonNull;
 
 public final class PrestoInstaller
         implements PrestoCommand
 {
     private static final Logger LOGGER = LogManager.getLogger(PrestoInstaller.class);
+    private static final Path CATALOG_DIR = Paths.get("/etc/presto/catalog");
     private static final int SUBPROCESS_TIMEOUT = 150;
 
     private final PackageType packageType;
@@ -79,6 +86,21 @@ public final class PrestoInstaller
         if (installRpm != 0) {
             throw new PrestoManagerException("Failed to install presto", installRpm);
         }
+        addTpchCatalog();
         LOGGER.debug("Successfully installed presto");
+    }
+
+    private static void addTpchCatalog()
+            throws PrestoManagerException
+    {
+        try {
+            if (!isDirectory(CATALOG_DIR)) {
+                createDirectory(CATALOG_DIR);
+                write(CATALOG_DIR.resolve("tpch.properties"), "connector.name=tpch".getBytes());
+            }
+        }
+        catch (IOException e) {
+            throw new PrestoManagerException("Failed to add tpch catalog", e);
+        }
     }
 }
