@@ -21,8 +21,8 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
@@ -35,17 +35,17 @@ public class NodeSet
     @Inject
     public NodeSet() {}
 
-    public void addAgent(URI uri, boolean isCoordinator, boolean isWorker)
+    public void addAgent(URI uri, boolean isCoordinator, boolean isWorker, UUID id)
     {
-        nodeSet.add(new Agent(uri, isCoordinator, isWorker));
+        nodeSet.add(new Agent(uri, isCoordinator, isWorker, id));
     }
 
-    public void removeAgent(int id)
+    public void removeAgent(UUID id)
     {
         nodeSet.removeIf(agent -> agent.getId().equals(id));
     }
 
-    public Collection<URI> getUrisByIds(Collection<Integer> ids)
+    public Collection<URI> getUrisByIds(Collection<UUID> ids)
     {
         Collection<URI> uriList = nodeSet.stream()
                 .filter(agent -> ids.contains(agent.getId()))
@@ -77,19 +77,17 @@ public class NodeSet
     //TODO: Add method to generate ID
     public static class Agent
     {
-        private final URI uri;
-        private static final AtomicInteger count = new AtomicInteger(0);
-        private final int id;
-        private final boolean isCoordinator;
-        private final boolean isWorker;
+        private URI uri;
+        private UUID id;
+        private boolean isCoordinator;
+        private boolean isWorker;
 
-        private Agent(URI uri, boolean isCoordinator, boolean isWorker)
+        private Agent(URI uri, boolean isCoordinator, boolean isWorker, UUID id)
         {
             this.uri = requireNonNull(uri, "uri is null");
             this.isCoordinator = isCoordinator;
             this.isWorker = isWorker;
-
-            this.id = count.incrementAndGet();
+            this.id = requireNonNull(id, "null agent id");
         }
 
         private URI getUri()
@@ -97,7 +95,7 @@ public class NodeSet
             return uri;
         }
 
-        private Integer getId()
+        private UUID getId()
         {
             return id;
         }

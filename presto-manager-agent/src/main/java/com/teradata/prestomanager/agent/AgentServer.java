@@ -53,7 +53,7 @@ class AgentServer
             injector.getInstance(Announcer.class).start();
         }
         catch (Exception e) {
-            LOG.error(e, "Error running application");
+            LOG.error(e, "Error starting server");
         }
     }
 }

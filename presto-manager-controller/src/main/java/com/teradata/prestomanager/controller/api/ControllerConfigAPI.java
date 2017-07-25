@@ -32,6 +32,7 @@ import javax.ws.rs.core.Response;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 import static org.eclipse.jetty.http.HttpMethod.DELETE;
 import static org.eclipse.jetty.http.HttpMethod.GET;
@@ -58,7 +59,7 @@ public class ControllerConfigAPI
         return ApiRequester.builder(forwardingClient, clazz);
     }
 
-    private Response forwardRequest(String scope, ApiRequester requester, Collection<Integer> nodeId)
+    private Response forwardRequest(String scope, ApiRequester requester, Collection<UUID> nodeId)
     {
         return requestDispatcher.forwardRequest(scope, requester, nodeId);
     }
@@ -66,7 +67,7 @@ public class ControllerConfigAPI
     @GET
     @Produces({MediaType.TEXT_PLAIN})
     public Response getConfig(@QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<Integer> nodeId)
+            @QueryParam("nodeId") List<UUID> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConfigAPI.class)
                 .httpMethod(GET)
@@ -82,7 +83,7 @@ public class ControllerConfigAPI
     public Response getConfigFile(
             @PathParam("file") String file,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<Integer> nodeId)
+            @QueryParam("nodeId") List<UUID> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConfigAPI.class)
                 .pathMethod("getConfigFile")
@@ -101,7 +102,7 @@ public class ControllerConfigAPI
             @PathParam("file") String file,
             @PathParam("property") String property,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<Integer> nodeId)
+            @QueryParam("nodeId") List<UUID> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConfigAPI.class)
                 .pathMethod("getConfigProperty")
@@ -121,7 +122,7 @@ public class ControllerConfigAPI
             String url,
             @PathParam("file") String file,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<Integer> nodeId)
+            @QueryParam("nodeId") List<UUID> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConfigAPI.class)
                 .pathMethod("setConfigFileByURL")
@@ -140,7 +141,7 @@ public class ControllerConfigAPI
     public Response deleteConfigFile(
             @PathParam("file") String file,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<Integer> nodeId)
+            @QueryParam("nodeId") List<UUID> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConfigAPI.class)
                 .pathMethod("deleteConfigFile")
