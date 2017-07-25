@@ -38,7 +38,7 @@ class ControllerServer
             bootstrap.strictConfig().initialize();
         }
         catch (Exception e) {
-            LOG.error(e, "Error running application");
+            LOG.error(e, "Error starting server");
         }
     }
 }

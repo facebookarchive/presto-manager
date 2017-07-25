@@ -28,6 +28,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 import static com.teradata.prestomanager.common.ExtendedStatus.MULTI_STATUS;
 import static com.teradata.prestomanager.controller.ResponseWrapper.wrapResponseList;
@@ -46,7 +47,7 @@ public class RequestDispatcher
         this.nodeSet = nodeSet;
     }
 
-    public Response forwardRequest(String scope, ApiRequester apiRequester, Collection<Integer> nodeId)
+    public Response forwardRequest(String scope, ApiRequester apiRequester, Collection<UUID> nodeId)
     {
         if (((scope != null) && (!nodeId.isEmpty())) || (scope == null && nodeId.isEmpty())) {
             LOGGER.error("Invalid parameters");
