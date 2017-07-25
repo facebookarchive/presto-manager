@@ -13,11 +13,14 @@
  */
 package com.teradata.prestomanager.controller;
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.teradata.prestomanager.common.ApiRequester;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -27,6 +30,7 @@ import java.util.Collection;
 import java.util.List;
 
 import static com.teradata.prestomanager.common.ExtendedStatus.MULTI_STATUS;
+import static com.teradata.prestomanager.controller.ResponseWrapper.wrapResponseList;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
@@ -71,7 +75,16 @@ public final class RequestDispatcher
         for (URI uri : uriCollection) {
             responseList.add(apiRequester.send(uri));
         }
-        return Response.status(MULTI_STATUS)
-                .entity(new Gson().toJson(responseList)).type(MediaType.APPLICATION_JSON).build();
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        try {
+            Entity entity = Entity.entity(
+                    mapper.writeValueAsString(wrapResponseList(responseList)), MediaType.APPLICATION_JSON_TYPE);
+            return Response.status(MULTI_STATUS).entity(entity).build();
+        }
+        catch (JsonProcessingException e) {
+            return Response.status(INTERNAL_SERVER_ERROR).entity("Error converting Agent responses to JSON").build();
+        }
     }
 }
