@@ -14,7 +14,6 @@
 package com.teradata.prestomanager.agent;
 
 import com.teradata.prestomanager.common.JaxrsParameter;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,9 +50,10 @@ public final class LogsHandler
 {
     private static final Logger LOG = LogManager.getLogger(LogsHandler.class);
 
+    public static final String DEFAULT_LOG_LEVEL = "ALL";
+
     // TODO: Make most of these 'private static final' values configurable
-    private static final Path LOG_DIRECTORY = Paths.get("/var/log/presto");
-    private static final Level LOG_ALL = Level.ALL;
+    private static final Path LOG_DIRECTORY = Paths.get("test/presto/logs");
 
     private static final DateTimeFormatter DATE_FORMAT = new DateTimeFormatterBuilder()
             .parseCaseInsensitive().parseStrict()
@@ -102,8 +102,7 @@ public final class LogsHandler
      * Method called in response to GET request
      */
     public static Response getLogs(String filename, JaxrsParameter<Instant> startDate,
-            JaxrsParameter<Instant> endDate, JaxrsParameter<Level> logLevel,
-            Integer maxEntries)
+            JaxrsParameter<Instant> endDate, String logLevel, Integer maxEntries)
     {
         requireNonNull(startDate);
         requireNonNull(endDate);
@@ -126,11 +125,6 @@ public final class LogsHandler
             }
         }
 
-        if (!logLevel.isValid()) {
-            return badRequest("Invalid log level");
-        }
-        Level level = logLevel.get();
-
         Path filePath;
         try {
             filePath = LOG_DIRECTORY.resolve(filename);
@@ -149,7 +143,7 @@ public final class LogsHandler
                     .setCapacity(maxEntries == null ? Integer.MAX_VALUE : maxEntries)
                     .keepFirst(start != null)
                     .addGroupFilter(DATE_GROUP, getFilter(start, end))
-                    .addGroupFilter(LEVEL_GROUP, getFilter(level))
+                    .addGroupFilter(LEVEL_GROUP, getFilter(logLevel))
                     .build();
         }
         catch (FileNotFoundException e) {
@@ -292,13 +286,13 @@ public final class LogsHandler
         }
     }
 
-    private static Predicate<String> getFilter(Level level)
+    private static Predicate<String> getFilter(String logLevel)
     {
-        if (level == null || level == LOG_ALL) {
+        if (logLevel == null || DEFAULT_LOG_LEVEL.equalsIgnoreCase(logLevel)) {
             return s -> true;
         }
         else {
-            return s -> level.name().equals(s);
+            return logLevel::equalsIgnoreCase;
         }
     }
 }
