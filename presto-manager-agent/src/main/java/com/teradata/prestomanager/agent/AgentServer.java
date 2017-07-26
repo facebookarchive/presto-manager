@@ -37,6 +37,7 @@ class AgentServer
         System.setProperty("node.environment", "test");
         System.setProperty("http-server.http.port", "8081");
         System.setProperty("log.levels-file", "etc/log.properties");
+        System.setProperty("discovery.uri", "http://localhost:8088");
 
         Bootstrap bootstrap = new Bootstrap(
                 new NodeModule(),

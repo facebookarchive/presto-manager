@@ -24,7 +24,9 @@ import org.glassfish.jersey.client.JerseyClientBuilder;
 
 import javax.ws.rs.client.Client;
 
+import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class ControllerServerModule
         extends AbstractConfigurationAwareModule
@@ -35,11 +37,14 @@ public class ControllerServerModule
         binder.disableCircularProxies();
 
         binder.bind(NodeSet.class).in(Scopes.SINGLETON);
+        newExporter(binder).export(NodeSet.class).withGeneratedName();
         binder.bind(RequestDispatcher.class).in(Scopes.SINGLETON);
         binder.bind(Client.class).to(JerseyClient.class).in(Scopes.SINGLETON);
 
         jaxrsBinder(binder).bind(ControllerConfigAPI.class);
         jaxrsBinder(binder).bind(ControllerConnectorAPI.class);
+
+        discoveryBinder(binder).bindSelector("presto-manager");
     }
 
     @Provides
