@@ -104,9 +104,10 @@ public final class PackageAPI
             @ApiResponse(code = 409, message = "Presto is running. Please stop Presto before beginning upgrade.")
     })
     public synchronized Response upgrade(@ApiParam("Url to fetch package") String urlToFetchPackage,
-            @QueryParam("checkDependencies") @DefaultValue("true") @ApiParam("If false, disables dependency checking") boolean checkDependencies)
+            @QueryParam("checkDependencies") @DefaultValue("true") @ApiParam("If false, disables dependency checking") boolean checkDependencies,
+            @QueryParam("preserveConfig") @DefaultValue("true") @ApiParam("If false, config files are not preserved") boolean preserveConfig)
     {
-        LOGGER.debug("POST /package  url: {} ; checkDependencies: {}", urlToFetchPackage, checkDependencies);
+        LOGGER.debug("POST /package  url: {} ; checkDependencies: {} ; preserveConfig : {}", urlToFetchPackage, checkDependencies, preserveConfig);
         if ("".equals(urlToFetchPackage)) {
             LOGGER.error("Url is empty or null");
             return Response.status(BAD_REQUEST).entity("Expected URL in the body").build();
@@ -117,7 +118,7 @@ public final class PackageAPI
                 return Response.status(CONFLICT).entity("Presto is running. Please stop Presto before beginning upgrade.").build();
             }
             URL url = new URL(urlToFetchPackage);
-            new Thread(new PrestoAsynchronousCommand(new PrestoUpgrader(RPM, url, checkDependencies))).start();
+            new Thread(new PrestoAsynchronousCommand(new PrestoUpgrader(RPM, url, checkDependencies, preserveConfig))).start();
         }
         catch (PrestoManagerException e) {
             LOGGER.error("Failed to ascertain whether presto is running", e);
