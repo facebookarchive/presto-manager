@@ -20,7 +20,6 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,6 +48,8 @@ import java.time.temporal.ChronoField;
 public class LogsAPI
 {
     private static final Logger LOG = LogManager.getLogger(LogsAPI.class);
+
+    private static final String DEFAULT_DATE = "DEFAULT";
 
     private static final DateTimeFormatter DATE_FORMAT = new DateTimeFormatterBuilder()
             .parseCaseInsensitive().parseStrict()
@@ -82,9 +83,9 @@ public class LogsAPI
             @ApiResponse(code = 404, message = "Resource not found")})
     public Response getLog(
             @PathParam("file") @ApiParam("The name of a file") String file,
-            @QueryParam("from") @ApiParam("Ignore logs before this date") @DefaultValue("DEFAULT") DateParameter fromDate,
-            @QueryParam("to") @ApiParam("Ignore logs after this date") @DefaultValue("DEFAULT") DateParameter toDate,
-            @QueryParam("level") @ApiParam("Only get logs of this level") @DefaultValue("ALL") LevelParameter level,
+            @QueryParam("from") @ApiParam("Ignore logs before this date") @DefaultValue(DEFAULT_DATE) DateParameter fromDate,
+            @QueryParam("to") @ApiParam("Ignore logs after this date") @DefaultValue(DEFAULT_DATE) DateParameter toDate,
+            @QueryParam("level") @ApiParam("Only get logs of this level") @DefaultValue(LogsHandler.DEFAULT_LOG_LEVEL) String level,
             @QueryParam("n") @ApiParam("The maximum number of log entries to get") Integer maxEntries)
     {
         LOG.info(formatParameters("GET /logs/%s ? from=[%s] & to=[%s] & level=[%s] & n=[%s]",
@@ -102,7 +103,7 @@ public class LogsAPI
             @ApiResponse(code = 404, message = "Resource not found")})
     public Response deleteLog(
             @PathParam("file") @ApiParam("The name of a file") String file,
-            @QueryParam("to") @ApiParam("Ignore logs after this date") @DefaultValue("DEFAULT") DateParameter toDate)
+            @QueryParam("to") @ApiParam("Ignore logs after this date") @DefaultValue(DEFAULT_DATE) DateParameter toDate)
     {
         LOG.info(formatParameters("GET /logs/%s ? to=[%s]", file, toDate));
         return LogsHandler.deleteLogs(file, toDate);
@@ -121,32 +122,11 @@ public class LogsAPI
                 throws ParseException
         {
             try {
-                return (s == null || "DEFAULT".equalsIgnoreCase(s))
+                return (s == null || DEFAULT_DATE.equalsIgnoreCase(s))
                         ? null
                         : DATE_FORMAT.parse(s, Instant::from);
             }
             catch (DateTimeParseException e) {
-                throw new ParseException();
-            }
-        }
-    }
-
-    public static class LevelParameter
-            extends JaxrsParameter<Level>
-    {
-        public LevelParameter(String s)
-        {
-            super(s);
-        }
-
-        @Override
-        protected Level parseString(String s)
-                throws ParseException
-        {
-            try {
-                return (s == null) ? null : Level.valueOf(s);
-            }
-            catch (IllegalArgumentException e) {
                 throw new ParseException();
             }
         }
