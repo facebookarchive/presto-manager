@@ -13,16 +13,24 @@
  */
 package com.teradata.prestomanager.controller;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import io.airlift.discovery.client.DiscoveryException;
+import io.airlift.discovery.client.ServiceDescriptor;
+import io.airlift.discovery.client.ServiceSelector;
+import io.airlift.discovery.client.ServiceType;
+import io.airlift.log.Logger;
 
 import javax.annotation.concurrent.ThreadSafe;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
@@ -30,23 +38,21 @@ import static java.util.Objects.requireNonNull;
 @ThreadSafe
 public class NodeSet
 {
-    private Set<Agent> nodeSet = ConcurrentHashMap.newKeySet();
+    private static final Logger LOG = Logger.get(NodeSet.class);
+
+    private Set<Agent> nodeSet = ImmutableSet.of();
+    private ServiceSelector serviceSelector;
 
     @Inject
-    public NodeSet() {}
-
-    public void addAgent(URI uri, boolean isCoordinator, boolean isWorker, UUID id)
+    public NodeSet(
+            @ServiceType("presto-manager") ServiceSelector serviceSelector)
     {
-        nodeSet.add(new Agent(uri, isCoordinator, isWorker, id));
-    }
-
-    public void removeAgent(UUID id)
-    {
-        nodeSet.removeIf(agent -> agent.getId().equals(id));
+        this.serviceSelector = serviceSelector;
     }
 
     public Collection<URI> getUrisByIds(Collection<UUID> ids)
     {
+        refreshNodes();
         Collection<URI> uriList = nodeSet.stream()
                 .filter(agent -> ids.contains(agent.getId()))
                 .map(Agent::getUri).collect(Collectors.toList());
@@ -60,9 +66,11 @@ public class NodeSet
 
     public Collection<URI> getUris(ApiScope scope)
     {
+        refreshNodes();
         switch (scope) {
             case CLUSTER:
-                return nodeSet.stream().map(Agent::getUri).collect(Collectors.toList());
+                return nodeSet.stream()
+                        .map(Agent::getUri).collect(Collectors.toList());
             case COORDINATOR:
                 return nodeSet.stream().filter(Agent::isCoordinator)
                         .map(Agent::getUri).collect(Collectors.toList());
@@ -74,7 +82,40 @@ public class NodeSet
         }
     }
 
-    //TODO: Add method to generate ID
+    public synchronized void refreshNodes()
+    {
+        List<ServiceDescriptor> services = serviceSelector.selectAllServices();
+
+        ImmutableSet.Builder<Agent> setBuilder = ImmutableSet.builder();
+
+        for (ServiceDescriptor service : services) {
+            Map<String, String> properties = service.getProperties();
+            // TODO: Make agents start without an ID, and provide one on first discovery
+            UUID id = service.getId();
+            boolean isCoordinator = Boolean.parseBoolean(properties.get("presto-coordinator"));
+            boolean isWorker = Boolean.parseBoolean(properties.get("presto-worker"));
+            URI uri;
+            try {
+                uri = new URI(properties.get("http")); // TODO: allow https
+            }
+            catch (URISyntaxException e) {
+                nodeSet = ImmutableSet.of(); // Don't keep an outdated or partial nodeSet
+                LOG.warn(e, "Invalid URI '%s' provided by node with ID '%s'",
+                        properties.get("http"), id.toString());
+                /* TODO: Map this exception to a specific response from the server with...
+                 * ExceptionMapper, or change it to a WebApplicationException containing
+                 * a Response (maybe via a utility class). If using ExceptionMapper, be
+                 * careful not to catch other DiscoveryExceptions (i.e. change this one).
+                 */
+                throw new DiscoveryException("", e);
+            }
+            Agent agent = new Agent(uri, isCoordinator, isWorker, id);
+            setBuilder.add(agent);
+        }
+
+        nodeSet = setBuilder.build();
+    }
+
     public static class Agent
     {
         private URI uri;

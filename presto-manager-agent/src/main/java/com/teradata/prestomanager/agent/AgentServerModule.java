@@ -26,6 +26,7 @@ import org.glassfish.jersey.client.JerseyClientBuilder;
 
 import javax.ws.rs.client.Client;
 
+import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 
 public class AgentServerModule
@@ -44,6 +45,8 @@ public class AgentServerModule
         jaxrsBinder(binder).bind(ControlAPI.class);
         jaxrsBinder(binder).bind(LogsAPI.class);
         jaxrsBinder(binder).bind(PackageAPI.class);
+
+        discoveryBinder(binder).bindHttpAnnouncement("presto-manager");
     }
 
     @Provides
