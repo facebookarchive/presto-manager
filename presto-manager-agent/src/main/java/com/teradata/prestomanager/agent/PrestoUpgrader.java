@@ -17,11 +17,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Paths;
 
+import static com.google.common.io.MoreFiles.deleteDirectoryContents;
 import static com.teradata.prestomanager.agent.CommandExecutor.executeCommand;
 import static com.teradata.prestomanager.agent.PackageApiUtils.checkRpmPackage;
 import static com.teradata.prestomanager.agent.PackageApiUtils.fetchFileFromUrl;
+import static java.io.File.createTempFile;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -30,16 +34,25 @@ public class PrestoUpgrader
 {
     private static final Logger LOGGER = LogManager.getLogger(PrestoUpgrader.class);
     private static final int SUBPROCESS_TIMEOUT = 150;
+    private static final String CONFIG_DIR = "/etc/presto";
 
     private final PackageType packageType;
     private final URL urlToFetchPackage;
     private final boolean checkDependencies;
+    private final boolean preserveConfig;
 
-    public PrestoUpgrader(PackageType packageType, URL urlToFetchPackage, boolean checkDependencies)
+    /**
+     *  @param packageType The type of package to install.
+     *  @param urlToFetchPackage The URL from which to retrieve Presto.
+     *  @param checkDependencies Whether to check RPM dependencies during upgrade.
+     *  @param preserveConfig Whether to preserve the existing configuration files.
+     */
+    public PrestoUpgrader(PackageType packageType, URL urlToFetchPackage, boolean checkDependencies, boolean preserveConfig)
     {
         this.packageType = requireNonNull(packageType);
         this.urlToFetchPackage = requireNonNull(urlToFetchPackage);
         this.checkDependencies = requireNonNull(checkDependencies);
+        this.preserveConfig = requireNonNull(preserveConfig);
     }
 
     public void runCommand()
@@ -49,7 +62,7 @@ public class PrestoUpgrader
             case RPM:
                 File tempFile = fetchFileFromUrl(urlToFetchPackage);
                 try {
-                    upgradeUsingRpm(tempFile.toString(), checkDependencies);
+                    upgradeUsingRpm(tempFile.toString(), checkDependencies, preserveConfig);
                 }
                 finally {
                     if (!tempFile.delete()) {
@@ -65,10 +78,31 @@ public class PrestoUpgrader
         }
     }
 
-    private static void upgradeUsingRpm(String pathToRpm, boolean checkDependencies)
+    private static void upgradeUsingRpm(String pathToRpm, boolean checkDependencies, boolean preserveConfig)
             throws PrestoManagerException
     {
         checkRpmPackage(pathToRpm);
+        if (preserveConfig) {
+            File tempConfig = storeConfigFiles();
+            try {
+                upgradePackage(pathToRpm, checkDependencies);
+                deployConfigFiles(tempConfig);
+            }
+            finally {
+                if (!tempConfig.delete()) {
+                    LOGGER.warn("Failed to delete the tempFile: {}", tempConfig.toString());
+                }
+            }
+        }
+        else {
+            upgradePackage(pathToRpm, checkDependencies);
+        }
+        LOGGER.debug("Successfully upgraded presto");
+    }
+
+    private static void upgradePackage(String pathToRpm, boolean checkDependencies)
+            throws PrestoManagerException
+    {
         int upgradeRpm;
         if (checkDependencies) {
             upgradeRpm = executeCommand(SUBPROCESS_TIMEOUT, "sudo", "rpm", "-U", pathToRpm);
@@ -79,6 +113,37 @@ public class PrestoUpgrader
         if (upgradeRpm != 0) {
             throw new PrestoManagerException("Failed to upgrade presto", upgradeRpm);
         }
-        LOGGER.debug("Successfully upgraded presto");
+    }
+
+    private static File storeConfigFiles()
+            throws PrestoManagerException
+    {
+        File tempFile;
+        try {
+            tempFile = createTempFile("PrestoConfigs", ".tar.gz");
+        }
+        catch (IOException e) {
+            throw new PrestoManagerException("Failed to create temp file.", e);
+        }
+        int tarResult = executeCommand("tar", "-czvf", tempFile.getAbsolutePath(), "-C", CONFIG_DIR, ".");
+        if (tarResult != 0) {
+            throw new PrestoManagerException("Failed to tar config files.", tarResult);
+        }
+        return tempFile;
+    }
+
+    private static void deployConfigFiles(File configTar)
+            throws PrestoManagerException
+    {
+        try {
+            deleteDirectoryContents(Paths.get(CONFIG_DIR));
+        }
+        catch (IOException e) {
+            throw new PrestoManagerException(format("Failed to delete contents of the directory: %s", CONFIG_DIR), e);
+        }
+        int untarResult = executeCommand("tar", "-xzvf", configTar.getAbsolutePath(), "-C", CONFIG_DIR);
+        if (untarResult != 0) {
+            throw new PrestoManagerException("Failed to deploy config files", untarResult);
+        }
     }
 }
