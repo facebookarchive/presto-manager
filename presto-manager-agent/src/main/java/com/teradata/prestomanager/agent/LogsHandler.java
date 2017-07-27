@@ -53,7 +53,7 @@ public final class LogsHandler
     public static final String DEFAULT_LOG_LEVEL = "ALL";
 
     // TODO: Make most of these 'private static final' values configurable
-    private static final Path LOG_DIRECTORY = Paths.get("test/presto/logs");
+    private static final Path LOG_DIRECTORY = Paths.get("/var/log/presto");
 
     private static final DateTimeFormatter DATE_FORMAT = new DateTimeFormatterBuilder()
             .parseCaseInsensitive().parseStrict()
