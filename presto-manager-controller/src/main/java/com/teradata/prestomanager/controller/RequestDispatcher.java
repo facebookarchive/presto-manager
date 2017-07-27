@@ -15,12 +15,10 @@ package com.teradata.prestomanager.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.inject.Inject;
 import com.teradata.prestomanager.common.ApiRequester;
 import io.airlift.log.Logger;
 
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -29,9 +27,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.teradata.prestomanager.common.ExtendedStatus.MULTI_STATUS;
-import static com.teradata.prestomanager.controller.ResponseWrapper.wrapResponseList;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
@@ -40,18 +38,24 @@ public class RequestDispatcher
     private static final Logger LOGGER = Logger.get(RequestDispatcher.class);
 
     private NodeSet nodeSet;
+    private ObjectMapper objectMapper;
 
     @Inject
-    public RequestDispatcher(NodeSet nodeSet)
+    public RequestDispatcher(NodeSet nodeSet,
+            @ForController ObjectMapper objectMapper)
     {
         this.nodeSet = nodeSet;
+        this.objectMapper = objectMapper;
     }
 
-    public Response forwardRequest(String scope, ApiRequester apiRequester, Collection<UUID> nodeId)
+    public Response forwardRequest(
+            String scope, ApiRequester apiRequester, Collection<UUID> nodeId)
     {
-        if (((scope != null) && (!nodeId.isEmpty())) || (scope == null && nodeId.isEmpty())) {
+        if (((scope != null) && (!nodeId.isEmpty()))
+                || (scope == null && nodeId.isEmpty())) {
             LOGGER.error("Invalid parameters");
-            return Response.status(BAD_REQUEST).entity("Invalid parameters").build();
+            return Response.status(BAD_REQUEST)
+                    .entity("Invalid parameters").build();
         }
 
         ApiScope apiScope;
@@ -65,32 +69,39 @@ public class RequestDispatcher
 
         Collection<URI> uriCollection;
         try {
-            uriCollection = nodeId.isEmpty() ? nodeSet.getUris(apiScope) : nodeSet.getUrisByIds(nodeId);
+            uriCollection = nodeId.isEmpty()
+                    ? nodeSet.getUris(apiScope)
+                    : nodeSet.getUrisByIds(nodeId);
         }
         catch (IllegalArgumentException e) {
             LOGGER.error("Invalid or duplicate node ID");
-            return Response.status(BAD_REQUEST).entity("Invalid or duplicate node ID").build();
+            return Response.status(BAD_REQUEST)
+                    .entity("Invalid or duplicate node ID").build();
         }
 
         if (apiScope == ApiScope.COORDINATOR && uriCollection.size() != 1) {
             LOGGER.error("Number of coordinator is not 1");
-            return Response.status(INTERNAL_SERVER_ERROR).entity("Number of coordinator is not 1").build();
+            return Response.status(INTERNAL_SERVER_ERROR)
+                    .entity("Number of coordinator is not 1").build();
         }
 
         List<Response> responseList = new ArrayList<>();
         for (URI uri : uriCollection) {
             responseList.add(apiRequester.send(uri));
         }
+        List<ResponseWrapper> responses = responseList.stream()
+                .map(ResponseWrapper::wrapResponse)
+                .collect(Collectors.toList());
 
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
         try {
-            Entity entity = Entity.entity(
-                    mapper.writeValueAsString(wrapResponseList(responseList)), MediaType.APPLICATION_JSON_TYPE);
-            return Response.status(MULTI_STATUS).entity(entity).build();
+            return Response.status(MULTI_STATUS)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(objectMapper.writeValueAsString(responses))
+                    .build();
         }
         catch (JsonProcessingException e) {
-            return Response.status(INTERNAL_SERVER_ERROR).entity("Error converting Agent responses to JSON").build();
+            return Response.status(INTERNAL_SERVER_ERROR)
+                    .entity("Error converting Agent responses to JSON").build();
         }
     }
 }
