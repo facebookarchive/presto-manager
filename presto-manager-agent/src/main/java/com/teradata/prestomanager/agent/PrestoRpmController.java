@@ -81,7 +81,7 @@ public class PrestoRpmController
             }
         }).start();
         return Response.status(ACCEPTED).entity("Presto is being started.\r\n" +
-                "To check if the Presto starts, check back later using the status API.").build();
+                "To verify that Presto has started, check back later using the status API.").build();
     }
 
     public Response stopUsingRpm(StopType stopType)

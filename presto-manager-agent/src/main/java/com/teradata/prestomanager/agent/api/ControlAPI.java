@@ -16,7 +16,6 @@ package com.teradata.prestomanager.agent.api;
 import com.google.inject.Inject;
 import com.teradata.prestomanager.agent.PrestoRpmController;
 import com.teradata.prestomanager.agent.StopType;
-import io.airlift.log.Logger;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -40,8 +39,6 @@ import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 @Singleton
 public class ControlAPI
 {
-    private static final Logger LOGGER = Logger.get(ControlAPI.class);
-
     private PrestoRpmController controller;
 
     @Inject

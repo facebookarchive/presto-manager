@@ -13,7 +13,6 @@
  */
 package com.teradata.prestomanager.agent.api;
 
-import com.teradata.prestomanager.agent.PackageType;
 import com.teradata.prestomanager.agent.PrestoCommand;
 import com.teradata.prestomanager.agent.PrestoInstaller;
 import com.teradata.prestomanager.agent.PrestoManagerException;
@@ -56,7 +55,6 @@ import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 public final class PackageAPI
 {
     private static final Logger LOGGER = Logger.get(PackageAPI.class);
-    private static PackageType installedPackageType;
 
     @PUT
     @Consumes({TEXT_PLAIN})
@@ -91,7 +89,7 @@ public final class PackageAPI
             return Response.status(BAD_REQUEST).entity("Invalid url").build();
         }
         return Response.status(ACCEPTED).entity("Presto is being installed.\r\n" +
-                "To check if the installation succeeds, check back later using the status API.").build();
+                "To verify that installation succeeded, check back later using the status API.").build();
     }
 
     @POST
@@ -141,7 +139,7 @@ public final class PackageAPI
     {
         new Thread(new PrestoAsynchronousCommand(new PrestoUninstaller(RPM, checkDependencies, ignoreErrors))).start();
         return Response.status(ACCEPTED).entity("Presto is being uninstalled.\r\n" +
-                "To check if the uninstallation succeeds, check back later using the status API.").build();
+                "To verify that uninstallation succeeded, check back later using the status API.").build();
     }
 
     public class PrestoAsynchronousCommand
