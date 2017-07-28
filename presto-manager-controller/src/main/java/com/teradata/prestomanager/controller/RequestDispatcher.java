@@ -19,13 +19,13 @@ import com.google.inject.Inject;
 import com.teradata.prestomanager.common.ApiRequester;
 import io.airlift.log.Logger;
 
+import javax.annotation.concurrent.ThreadSafe;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -33,6 +33,7 @@ import static com.teradata.prestomanager.common.ExtendedStatus.MULTI_STATUS;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
+@ThreadSafe
 public class RequestDispatcher
 {
     private static final Logger LOGGER = Logger.get(RequestDispatcher.class);
@@ -85,13 +86,12 @@ public class RequestDispatcher
                     .entity("Number of coordinator is not 1").build();
         }
 
-        List<Response> responseList = new ArrayList<>();
-        for (URI uri : uriCollection) {
-            responseList.add(apiRequester.send(uri));
-        }
-        List<ResponseWrapper> responses = responseList.stream()
+        // Jackson serializes ArrayLists as JSON arrays
+        ArrayList<ResponseWrapper> responses = uriCollection.parallelStream()
+                .unordered()
+                .map(apiRequester::send)
                 .map(ResponseWrapper::wrapResponse)
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(ArrayList::new));
 
         try {
             return Response.status(MULTI_STATUS)

@@ -16,6 +16,7 @@ package com.teradata.prestomanager.common;
 import org.eclipse.jetty.http.HttpMethod;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
@@ -30,24 +31,24 @@ import java.util.concurrent.Future;
 
 import static java.util.Objects.requireNonNull;
 
+@ThreadSafe
 public class ApiRequester
 {
-    private final UriBuilder uriBuilder;
+    private final Client client;
+    private final String uriTemplate;
     private final HttpMethod method;
     private final MultivaluedMap<String, Object> headers;
     private final String mediaType;
     @Nullable
-    private Entity entity;
+    private final Entity entity;
 
-    private Client client;
-
-    private ApiRequester(Client client, // TODO: Use AssistedInject to manage this
+    private ApiRequester(Client client,
             UriBuilder uriBuilder, HttpMethod method,
             Entity entity, MultivaluedMap<String, Object> headers,
             String mediaType)
     {
         this.client = requireNonNull(client);
-        this.uriBuilder = requireNonNull(uriBuilder);
+        this.uriTemplate = requireNonNull(uriBuilder).toTemplate();
         this.method = requireNonNull(method);
         this.headers = requireNonNull(headers);
         this.mediaType = requireNonNull(mediaType);
@@ -55,12 +56,28 @@ public class ApiRequester
         this.entity = entity;
     }
 
+    /**
+     * Send this request to the given base URI.
+     * <p>
+     * The path should contain no components besides user-info, host, and port.
+     * <p>
+     * This method is thread-safe.
+     */
+    // TODO: The uri should be validated to not conflict with the uriTemplate
+    // If the uriTemplate contains a path, and the given URI has a path (even
+    // just a single trailing slash, the template's path will be replaced).
     public Response send(URI uri)
     {
         Invocation invocation = createInvocation(uri);
         return invocation.invoke();
     }
 
+    /**
+     * Send this request to the given base URI.
+     * <p>
+     * Identical to {@link #send(URI)}, except the request is sent
+     * asynchronously in a {@link Future}.
+     */
     public Future<Response> sendAsync(URI uri)
     {
         Invocation invocation = createInvocation(uri);
@@ -70,7 +87,7 @@ public class ApiRequester
     private Invocation createInvocation(URI uri)
     {
         Invocation.Builder builder = client
-                .target(uriBuilder.uri(uri).build())
+                .target(UriBuilder.fromUri(uriTemplate).uri(uri).build())
                 .request(mediaType)
                 .headers(headers);
 
