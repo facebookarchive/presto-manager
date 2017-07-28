@@ -15,6 +15,7 @@ package com.teradata.prestomanager.controller.api;
 
 import com.google.inject.Inject;
 import com.teradata.prestomanager.common.ApiRequester;
+import com.teradata.prestomanager.controller.AbstractControllerAPI;
 import com.teradata.prestomanager.controller.RequestDispatcher;
 
 import javax.inject.Singleton;
@@ -30,7 +31,6 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,27 +41,14 @@ import static org.eclipse.jetty.http.HttpMethod.POST;
 @Path("/connectors")
 @Singleton
 public class ControllerConnectorAPI
+        extends AbstractControllerAPI
 {
-    private Client forwardingClient;
-    private RequestDispatcher requestDispatcher;
-
     @Inject
     public ControllerConnectorAPI(
             Client forwardingClient,
             RequestDispatcher requestDispatcher)
     {
-        this.forwardingClient = forwardingClient;
-        this.requestDispatcher = requestDispatcher;
-    }
-
-    private ApiRequester.Builder requesterBuilder(Class<?> clazz)
-    {
-        return ApiRequester.builder(forwardingClient, clazz);
-    }
-
-    private Response forwardRequest(String scope, ApiRequester requester, Collection<UUID> nodeId)
-    {
-        return requestDispatcher.forwardRequest(scope, requester, nodeId);
+        super(forwardingClient, requestDispatcher);
     }
 
     @GET
