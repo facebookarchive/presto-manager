@@ -42,7 +42,7 @@ public class ControllerServerModule
     {
         binder.disableCircularProxies();
 
-        binder.bind(NodeSet.class).in(Scopes.SINGLETON);
+        binder.bind(AgentMap.class).to(NodeSet.class).in(Scopes.SINGLETON);
         binder.bind(RequestDispatcher.class).in(Scopes.SINGLETON);
         binder.bind(Client.class).to(JerseyClient.class).in(Scopes.SINGLETON);
 

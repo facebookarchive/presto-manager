@@ -13,6 +13,7 @@
  */
 package com.teradata.prestomanager.controller;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import io.airlift.discovery.client.DiscoveryException;
@@ -31,16 +32,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.stream.Collector;
 
 import static java.util.Objects.requireNonNull;
 
 @ThreadSafe
 public class NodeSet
+    implements AgentMap
 {
     private static final Logger LOG = Logger.get(NodeSet.class);
 
-    private Set<Agent> nodeSet = ImmutableSet.of();
+    private Set<Agent> agentSet = ImmutableSet.of();
     private ServiceSelector serviceSelector;
 
     @Inject
@@ -50,39 +52,48 @@ public class NodeSet
         this.serviceSelector = serviceSelector;
     }
 
-    public Collection<URI> getUrisByIds(Collection<UUID> ids)
+    @Override
+    public Map<UUID, URI> getUrisByIds(Collection<UUID> ids)
     {
         refreshNodes();
-        Collection<URI> uriList = nodeSet.stream()
+        Map<UUID, URI> uriMap = agentSet.stream()
                 .filter(agent -> ids.contains(agent.getId()))
-                .map(Agent::getUri).collect(Collectors.toList());
-        if (ids.size() != uriList.size()) {
+                .collect(toIdUriMap());
+        if (ids.size() != uriMap.size()) {
             throw new IllegalArgumentException("Invalid or duplicate node ID");
         }
         else {
-            return uriList;
+            return uriMap;
         }
     }
 
-    public Collection<URI> getUris(ApiScope scope)
+    @Override
+    public Map<UUID, URI> getAllUris()
     {
         refreshNodes();
-        switch (scope) {
-            case CLUSTER:
-                return nodeSet.stream()
-                        .map(Agent::getUri).collect(Collectors.toList());
-            case COORDINATOR:
-                return nodeSet.stream().filter(Agent::isCoordinator)
-                        .map(Agent::getUri).collect(Collectors.toList());
-            case WORKERS:
-                return nodeSet.stream().filter(Agent::isWorker)
-                        .map(Agent::getUri).collect(Collectors.toList());
-            default:
-                return null;
-        }
+        return agentSet.stream()
+                .collect(toIdUriMap());
     }
 
-    public synchronized void refreshNodes()
+    @Override
+    public Map<UUID, URI> getCoordinatorUris()
+    {
+        refreshNodes();
+        return agentSet.stream()
+                .filter(Agent::isCoordinator)
+                .collect(toIdUriMap());
+    }
+
+    @Override
+    public Map<UUID, URI> getWorkerUris()
+    {
+        refreshNodes();
+        return agentSet.stream()
+                .filter(Agent::isWorker)
+                .collect(toIdUriMap());
+    }
+
+    private synchronized void refreshNodes()
     {
         List<ServiceDescriptor> services = serviceSelector.selectAllServices();
 
@@ -99,7 +110,7 @@ public class NodeSet
                 uri = new URI(properties.get("http")); // TODO: allow https
             }
             catch (URISyntaxException e) {
-                nodeSet = ImmutableSet.of(); // Don't keep an outdated or partial nodeSet
+                agentSet = ImmutableSet.of(); // Don't keep an outdated or partial set of agents
                 LOG.warn(e, "Invalid URI '%s' provided by node with ID '%s'",
                         properties.get("http"), id.toString());
                 /* TODO: Map this exception to a specific response from the server with...
@@ -107,16 +118,25 @@ public class NodeSet
                  * a Response (maybe via a utility class). If using ExceptionMapper, be
                  * careful not to catch other DiscoveryExceptions (i.e. change this one).
                  */
-                throw new DiscoveryException("", e);
+                throw new DiscoveryException(
+                        String.format("Invalid URI '%s' for node with ID '%s'",
+                                properties.get("http"), id), e);
             }
             Agent agent = new Agent(uri, isCoordinator, isWorker, id);
+            // TODO: Check for duplicate IDs
             setBuilder.add(agent);
         }
 
-        nodeSet = setBuilder.build();
+        agentSet = setBuilder.build();
     }
 
-    public static class Agent
+    private static Collector<Agent, ?, ? extends Map<UUID, URI>> toIdUriMap()
+    {
+        return ImmutableMap.toImmutableMap(Agent::getId, Agent::getUri);
+    }
+
+    // TODO: Reorder constructor parameters
+    private static class Agent
     {
         private URI uri;
         private UUID id;
