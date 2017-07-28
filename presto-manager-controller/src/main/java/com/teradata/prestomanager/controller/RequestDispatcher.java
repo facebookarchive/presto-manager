@@ -24,11 +24,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import java.net.URI;
-import java.util.ArrayList;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.teradata.prestomanager.common.ExtendedStatus.MULTI_STATUS;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
@@ -38,14 +39,14 @@ public class RequestDispatcher
 {
     private static final Logger LOGGER = Logger.get(RequestDispatcher.class);
 
-    private NodeSet nodeSet;
+    private AgentMap agentMap;
     private ObjectMapper objectMapper;
 
     @Inject
-    public RequestDispatcher(NodeSet nodeSet,
+    public RequestDispatcher(AgentMap agentMap,
             @ForController ObjectMapper objectMapper)
     {
-        this.nodeSet = nodeSet;
+        this.agentMap = agentMap;
         this.objectMapper = objectMapper;
     }
 
@@ -68,11 +69,11 @@ public class RequestDispatcher
             return Response.status(BAD_REQUEST).entity("Invalid scope").build();
         }
 
-        Collection<URI> uriCollection;
+        Map<UUID, URI> uriMap;
         try {
-            uriCollection = nodeId.isEmpty()
-                    ? nodeSet.getUris(apiScope)
-                    : nodeSet.getUrisByIds(nodeId);
+            uriMap = nodeId.isEmpty()
+                    ? agentMap.getUrisByScope(apiScope)
+                    : agentMap.getUrisByIds(nodeId);
         }
         catch (IllegalArgumentException e) {
             LOGGER.error("Invalid or duplicate node ID");
@@ -80,18 +81,18 @@ public class RequestDispatcher
                     .entity("Invalid or duplicate node ID").build();
         }
 
-        if (apiScope == ApiScope.COORDINATOR && uriCollection.size() != 1) {
+        if (apiScope == ApiScope.COORDINATOR && uriMap.size() != 1) {
             LOGGER.error("Number of coordinator is not 1");
             return Response.status(INTERNAL_SERVER_ERROR)
                     .entity("Number of coordinator is not 1").build();
         }
 
         // Jackson serializes ArrayLists as JSON arrays
-        ArrayList<ResponseWrapper> responses = uriCollection.parallelStream()
-                .unordered()
-                .map(apiRequester::send)
-                .map(ResponseWrapper::wrapResponse)
-                .collect(Collectors.toCollection(ArrayList::new));
+        Map<UUID, ResponseWrapper> responses = uriMap.entrySet().parallelStream()
+                .map(e -> new SimpleEntry<>(
+                        e.getKey(),
+                        ResponseWrapper.wrapResponse(apiRequester.send(e.getValue()))))
+                .collect(toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
         try {
             return Response.status(MULTI_STATUS)
