@@ -46,7 +46,6 @@ public final class AgentFileUtils
     public static List<String> getFileNameList(Path path)
             throws IOException
     {
-        checkArgument(path.toFile().isDirectory(), "%s is not a directory", path);
         ImmutableList<String> fileNames;
         try (Stream<Path> stream = Files.list(path)) {
             fileNames = stream.filter(Files::isRegularFile).map(Path::getFileName).map(Path::toString)
@@ -76,9 +75,8 @@ public final class AgentFileUtils
         try (ReadableByteChannel readableByteChannel = Channels.newChannel(website.openStream());
                 FileOutputStream fileOutputStream = new FileOutputStream(tempFile)) {
             fileOutputStream.getChannel().transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
-            Path originalCopy = path;
             Path newCopy = tempFile.toPath();
-            Files.copy(newCopy, originalCopy, REPLACE_EXISTING);
+            Files.copy(newCopy, path, REPLACE_EXISTING);
         }
         finally {
             tempFile.delete();
