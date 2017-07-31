@@ -14,7 +14,10 @@
 package com.teradata.prestomanager.agent;
 
 import com.google.common.io.ByteStreams;
+import com.google.inject.Inject;
 import io.airlift.log.Logger;
+
+import javax.annotation.concurrent.ThreadSafe;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,49 +30,52 @@ import static java.lang.String.format;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+@ThreadSafe
 public final class CommandExecutor
 {
     private static final Logger LOGGER = Logger.get(CommandExecutor.class);
-    private static final int DEFAULT_TIMEOUT = 60;
-    private final String[] commandArray;
-    private final int timeout;
 
-    private CommandExecutor(String[] commandArray, int timeout)
+    private final int longTimeout;
+    private final int shortTimeout;
+
+    @Inject
+    private CommandExecutor(AgentConfig config)
+    {
+        this.longTimeout = config.getLongSubprocessTimeout();
+        this.shortTimeout = config.getShortSubprocessTimeout();
+    }
+
+    public CommandResult getCommandResult(String... command)
+            throws PrestoManagerException
+    {
+        return execute(command, shortTimeout);
+    }
+
+    public CommandResult getLongCommandResult(String... command)
+            throws PrestoManagerException
+    {
+        return execute(command, longTimeout);
+    }
+
+    public int runCommand(String... command)
+            throws PrestoManagerException
+    {
+        return execute(command, shortTimeout).getExitValue();
+    }
+
+    public int runLongCommand(String... command)
+            throws PrestoManagerException
+    {
+        return execute(command, longTimeout).getExitValue();
+    }
+
+    private CommandResult execute(String[] commandArray, int timeout)
+            throws PrestoManagerException
     {
         if (commandArray.length == 0) {
-            throw new IllegalArgumentException("Command array is empty");
+            throw new IllegalArgumentException("Command array is empty; no command given");
         }
-        this.commandArray = commandArray;
-        this.timeout = timeout;
-    }
 
-    public static int executeCommand(String... command)
-            throws PrestoManagerException
-    {
-        return new CommandExecutor(command, DEFAULT_TIMEOUT).execute().getExitValue();
-    }
-
-    public static CommandResult execCommandResult(String... command)
-            throws PrestoManagerException
-    {
-        return new CommandExecutor(command, DEFAULT_TIMEOUT).execute();
-    }
-
-    public static int executeCommand(int timeoutInSeconds, String... command)
-            throws PrestoManagerException
-    {
-        return new CommandExecutor(command, timeoutInSeconds).execute().getExitValue();
-    }
-
-    public static CommandResult execCommandResult(int timeoutInSeconds, String... command)
-            throws PrestoManagerException
-    {
-        return new CommandExecutor(command, timeoutInSeconds).execute();
-    }
-
-    private CommandResult execute()
-            throws PrestoManagerException
-    {
         String commandString = String.join(" ", commandArray);
         LOGGER.debug("Command to be executed: %s", commandString);
 
@@ -78,7 +84,7 @@ public final class CommandExecutor
         try {
             Process process = processBuilder.start();
             ExecutorService executor = newSingleThreadExecutor();
-            Future<String> outputThread = executor.submit(()->getProcessOutput(process));
+            Future<String> outputThread = executor.submit(() -> getProcessOutput(process));
             String output;
             try {
                output =  outputThread.get(timeout, SECONDS);
@@ -99,7 +105,7 @@ public final class CommandExecutor
         }
     }
 
-    private String getProcessOutput(Process process)
+    private static String getProcessOutput(Process process)
     {
         try (InputStream processStream = process.getInputStream()) {
             String result = new String(ByteStreams.toByteArray(processStream));
@@ -115,7 +121,7 @@ public final class CommandExecutor
         return null;
     }
 
-    public final class CommandResult
+    public static final class CommandResult
     {
         private final String output;
         private final int exitValue;

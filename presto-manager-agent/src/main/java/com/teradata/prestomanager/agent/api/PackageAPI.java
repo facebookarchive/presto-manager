@@ -13,10 +13,9 @@
  */
 package com.teradata.prestomanager.agent.api;
 
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.teradata.prestomanager.agent.PackageController;
-import com.teradata.prestomanager.agent.RpmController;
-import io.airlift.log.Logger;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -33,17 +32,21 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
+import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 
 @Path("/package")
 @Api(description = "API to install, uninstall, upgrade Presto")
 @Singleton
-// TODO: Add configuration to get package type from PM config file
 public final class PackageAPI
 {
-    private static final Logger LOGGER = Logger.get(PackageAPI.class);
+    private final PackageController controller;
 
-    private static final PackageController CONTROLLER = new RpmController();
+    @Inject
+    public PackageAPI(PackageController controller)
+    {
+        this.controller = requireNonNull(controller);
+    }
 
     @PUT
     @Consumes(TEXT_PLAIN)
@@ -57,7 +60,7 @@ public final class PackageAPI
     public synchronized Response install(@ApiParam("Url to fetch package") String packageUrl,
             @QueryParam("checkDependencies") @DefaultValue("true") @ApiParam("If false, disables dependency checking") boolean checkDependencies)
     {
-        return CONTROLLER.install(packageUrl, checkDependencies);
+        return controller.install(packageUrl, checkDependencies);
     }
 
     @POST
@@ -74,7 +77,7 @@ public final class PackageAPI
             @QueryParam("preserveConfig") @DefaultValue("true") @ApiParam("If false, config files are not preserved") boolean preserveConfig,
             @QueryParam("forceUpgrade") @DefaultValue("false") @ApiParam("If true, warnings are ignored during upgrade") boolean forceUpgrade)
     {
-        return CONTROLLER.upgrade(packageUrl, checkDependencies, preserveConfig, forceUpgrade);
+        return controller.upgrade(packageUrl, checkDependencies, preserveConfig, forceUpgrade);
     }
 
     @DELETE
@@ -89,6 +92,6 @@ public final class PackageAPI
             @QueryParam("checkDependencies") @DefaultValue("true") @ApiParam("If false, disables dependency checking") boolean checkDependencies,
             @QueryParam("forceUninstall") @DefaultValue("false") @ApiParam("If true, warnings are ignored during uninstall") boolean forceUninstall)
     {
-        return CONTROLLER.uninstall(checkDependencies, forceUninstall);
+        return controller.uninstall(checkDependencies, forceUninstall);
     }
 }

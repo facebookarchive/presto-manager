@@ -21,6 +21,8 @@ import javax.ws.rs.core.Response;
 import java.util.Collection;
 import java.util.UUID;
 
+import static java.util.Objects.requireNonNull;
+
 public abstract class AbstractControllerAPI
 {
     private Client forwardingClient;
@@ -30,8 +32,8 @@ public abstract class AbstractControllerAPI
             Client forwardingClient,
             RequestDispatcher requestDispatcher)
     {
-        this.forwardingClient = forwardingClient;
-        this.requestDispatcher = requestDispatcher;
+        this.forwardingClient = requireNonNull(forwardingClient);
+        this.requestDispatcher = requireNonNull(requestDispatcher);
     }
 
     protected void optionalQueryParam(ApiRequester.Builder request, String name, Object value)

@@ -29,6 +29,7 @@ import org.glassfish.jersey.client.JerseyClientBuilder;
 
 import javax.ws.rs.client.Client;
 
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 
@@ -40,7 +41,24 @@ public class AgentServerModule
     {
         binder.disableCircularProxies();
 
+        // buildConfigObject also calls bindConfig
+        AgentConfig config = buildConfigObject(AgentConfig.class);
+        configBinder(binder).bindConfig(PrestoConfig.class, "presto");
+
+        switch (config.getPackageType()) {
+            case RPM:
+                binder.bind(PackageController.class).to(RpmController.class)
+                        .in(Scopes.SINGLETON);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported package type");
+        }
+
         binder.bind(Client.class).to(JerseyClient.class).in(Scopes.SINGLETON);
+        binder.bind(LogsHandler.class).in(Scopes.SINGLETON);
+        binder.bind(PrestoInformer.class);
+        binder.bind(CommandExecutor.class);
+        binder.bind(PrestoConfigDeployer.class);
 
         jaxrsBinder(binder).bind(ConfigAPI.class);
         jaxrsBinder(binder).bind(ConnectorsAPI.class);
@@ -54,7 +72,7 @@ public class AgentServerModule
 
     @Provides
     @Singleton
-    public JerseyClient jerseyClientProvider()
+    JerseyClient jerseyClientProvider()
     {
         return JerseyClientBuilder.createClient();
     }

@@ -13,8 +13,8 @@
  */
 package com.teradata.prestomanager.agent;
 
+import com.google.inject.Inject;
 import io.airlift.log.Logger;
-import org.glassfish.jersey.client.JerseyClientBuilder;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Client;
@@ -23,32 +23,39 @@ import javax.ws.rs.core.UriBuilder;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import static com.teradata.prestomanager.agent.AgentFileUtils.getFileProperty;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 
-public class PrestoUtils
+public class PrestoInformer
 {
-    private static final Path PRESTO_CONFIG_FILE = Paths.get("/etc/presto/config.properties");
-    private static final Logger LOGGER = Logger.get(PrestoUtils.class);
-    private static final Client client = JerseyClientBuilder.createClient();
+    private static final Logger LOGGER = Logger.get(PrestoInformer.class);
 
-    private PrestoUtils() {}
+    private final Path configFile;
+    private final Client client;
 
-    public static int getPrestoPort()
+    @Inject
+    PrestoInformer(Client client, PrestoConfig config)
+    {
+        this.client = requireNonNull(client);
+        this.configFile = requireNonNull(config.getConfigurationDirectory())
+                .resolve("config.properties");
+    }
+
+    public int getPrestoPort()
             throws IOException
     {
-        return Integer.valueOf(getFileProperty(PRESTO_CONFIG_FILE, "http-server.http.port"));
+        return Integer.valueOf(getFileProperty(configFile, "http-server.http.port"));
     }
 
     /**
      * @return whether Presto is running as a coordinator
      * @throws IOException If Presto port number could not be retrieved
      */
-    public static boolean isRunningCoordinator()
+    public boolean isRunningCoordinator()
             throws IOException
     {
         try {
