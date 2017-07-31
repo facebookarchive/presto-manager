@@ -42,6 +42,7 @@ import java.net.URL;
 import static com.teradata.prestomanager.agent.PackageApiUtils.isInstalled;
 import static com.teradata.prestomanager.agent.PackageApiUtils.isRunning;
 import static com.teradata.prestomanager.agent.PackageType.RPM;
+import static com.teradata.prestomanager.agent.PrestoRpmController.terminatePresto;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status.ACCEPTED;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -103,7 +104,8 @@ public final class PackageAPI
     })
     public synchronized Response upgrade(@ApiParam("Url to fetch package") String urlToFetchPackage,
             @QueryParam("checkDependencies") @DefaultValue("true") @ApiParam("If false, disables dependency checking") boolean checkDependencies,
-            @QueryParam("preserveConfig") @DefaultValue("true") @ApiParam("If false, config files are not preserved") boolean preserveConfig)
+            @QueryParam("preserveConfig") @DefaultValue("true") @ApiParam("If false, config files are not preserved") boolean preserveConfig,
+            @QueryParam("forceUpgrade") @DefaultValue("false") @ApiParam("If true, warnings are ignored during upgrade") boolean forceUpgrade)
     {
         if ("".equals(urlToFetchPackage)) {
             LOGGER.error("Url is empty or null");
@@ -111,8 +113,12 @@ public final class PackageAPI
         }
         try {
             if (isRunning()) {
-                LOGGER.error("Presto is running. Stop Presto before beginning upgrade.");
-                return Response.status(CONFLICT).entity("Presto is running. Stop Presto before beginning upgrade.").build();
+                if (!forceUpgrade) {
+                    LOGGER.error("Presto is running. Stop Presto before beginning upgrade.");
+                    return Response.status(CONFLICT).entity("Presto is running. Stop Presto before beginning upgrade.").build();
+                }
+                LOGGER.warn("Presto is running; Presto will be forcibly stopped before attempting to upgrade.");
+                terminatePresto();
             }
             URL url = new URL(urlToFetchPackage);
             new Thread(new PrestoAsynchronousCommand(new PrestoUpgrader(RPM, url, checkDependencies, preserveConfig))).start();
@@ -130,15 +136,16 @@ public final class PackageAPI
     }
 
     @DELETE
+    @Produces({TEXT_PLAIN})
     @ApiOperation(value = "Uninstall presto")
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request")
     })
     public synchronized Response uninstall(
             @QueryParam("checkDependencies") @DefaultValue("true") @ApiParam("If false, disables dependency checking") boolean checkDependencies,
-            @QueryParam("ignoreErrors") @DefaultValue("false") @ApiParam("If true, warnings are ignored during uninstall") boolean ignoreErrors)
+            @QueryParam("forceUninstall") @DefaultValue("false") @ApiParam("If true, warnings are ignored during uninstall") boolean forceUninstall)
     {
-        new Thread(new PrestoAsynchronousCommand(new PrestoUninstaller(RPM, checkDependencies, ignoreErrors))).start();
+        new Thread(new PrestoAsynchronousCommand(new PrestoUninstaller(RPM, checkDependencies, forceUninstall))).start();
         return Response.status(ACCEPTED).entity("Presto is being uninstalled.\r\n" +
                 "To verify that uninstallation succeeded, check back later using the status API.").build();
     }
