@@ -15,6 +15,8 @@ package com.teradata.prestomanager.agent;
 
 import com.google.inject.Binder;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import com.teradata.prestomanager.agent.api.ConfigAPI;
 import com.teradata.prestomanager.agent.api.ConnectorsAPI;
 import com.teradata.prestomanager.agent.api.ControlAPI;
@@ -37,7 +39,7 @@ public class AgentServerModule
     {
         binder.disableCircularProxies();
 
-        binder.bind(Client.class).to(JerseyClient.class);
+        binder.bind(Client.class).to(JerseyClient.class).in(Scopes.SINGLETON);
         binder.bind(PrestoRpmController.class);
 
         jaxrsBinder(binder).bind(ConfigAPI.class);
@@ -50,6 +52,7 @@ public class AgentServerModule
     }
 
     @Provides
+    @Singleton
     public JerseyClient jerseyClientProvider()
     {
         return JerseyClientBuilder.createClient();

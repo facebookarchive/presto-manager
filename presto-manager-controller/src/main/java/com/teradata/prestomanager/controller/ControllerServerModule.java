@@ -29,7 +29,6 @@ import javax.ws.rs.client.Client;
 
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
-import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class ControllerServerModule
         extends AbstractConfigurationAwareModule
@@ -40,7 +39,6 @@ public class ControllerServerModule
         binder.disableCircularProxies();
 
         binder.bind(NodeSet.class).in(Scopes.SINGLETON);
-        newExporter(binder).export(NodeSet.class).withGeneratedName();
         binder.bind(RequestDispatcher.class).in(Scopes.SINGLETON);
         binder.bind(Client.class).to(JerseyClient.class).in(Scopes.SINGLETON);
 
@@ -51,6 +49,7 @@ public class ControllerServerModule
     }
 
     @Provides
+    @Singleton
     public JerseyClient jerseyClientProvider()
     {
         return JerseyClientBuilder.createClient();
@@ -59,7 +58,7 @@ public class ControllerServerModule
     @Provides
     @Singleton
     @ForController
-    public ObjectMapper obectMapper()
+    public ObjectMapper objectMapper()
     {
         // TODO: Don't enable the pretty printer ("INDENT_OUTPUT")
         return new ObjectMapper()
