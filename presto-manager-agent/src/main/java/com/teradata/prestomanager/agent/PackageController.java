@@ -19,7 +19,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.teradata.prestomanager.common.StopType;
 import io.airlift.log.Logger;
-import org.glassfish.jersey.client.JerseyClientBuilder;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Client;
@@ -29,13 +28,10 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 
-import static com.teradata.prestomanager.agent.PrestoUtils.getPrestoPort;
-import static com.teradata.prestomanager.agent.PrestoUtils.isRunningCoordinator;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.client.Entity.entity;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
@@ -51,13 +47,16 @@ public abstract class PackageController
 {
     private static final Logger LOGGER = Logger.get(PackageController.class);
 
-    protected static final Path CATALOG_DIR = Paths.get("/etc/presto/catalog");
-    protected static final Path CONFIG_DIR = Paths.get("/etc/presto");
-    protected static final int SUBPROCESS_TIMEOUT = 150;
-    protected static final Path LAUNCHER_SCRIPT = Paths.get("/usr/lib/presto/bin/launcher");
-
     private static final Gson GSON = new Gson();
-    private final Client client = JerseyClientBuilder.createClient();
+
+    private final Client client;
+    private final PrestoInformer informer;
+
+    protected PackageController(Client client, PrestoInformer informer)
+    {
+        this.client = requireNonNull(client);
+        this.informer = requireNonNull(informer);
+    }
 
     public Response install(String packageUrl, boolean checkDependencies)
     {
@@ -176,7 +175,7 @@ public abstract class PackageController
                     kill();
                     break;
                 case GRACEFUL:
-                    if (isRunningCoordinator()) {
+                    if (informer.isRunningCoordinator()) {
                         LOGGER.error("Coordinator can't be gracefully stopped.");
                         return Response.status(CONFLICT).entity("Coordinator can't be gracefully stopped").build();
                     }
@@ -202,7 +201,7 @@ public abstract class PackageController
             throws PrestoManagerException
     {
         try {
-            UriBuilder uriBuilder = fromUri(format("http://localhost:%s", getPrestoPort())).path("/v1/info/state");
+            UriBuilder uriBuilder = fromUri(format("http://localhost:%s", informer.getPrestoPort())).path("/v1/info/state");
             Response response = client.target(uriBuilder.build()).request(TEXT_PLAIN)
                     .buildPut(entity(GSON.toJson("SHUTTING_DOWN"), APPLICATION_JSON)).invoke();
             if (response.getStatus() != 200) {
@@ -260,7 +259,7 @@ public abstract class PackageController
             return Response.status(INTERNAL_SERVER_ERROR).entity(GSON.toJson(e.getMessage())).type(APPLICATION_JSON).build();
         }
         try {
-            UriBuilder uriBuilder = fromUri(format("http://localhost:%s", getPrestoPort())).path("/v1/info");
+            UriBuilder uriBuilder = fromUri(format("http://localhost:%s", informer.getPrestoPort())).path("/v1/info");
             Response prestoInfo = client.target(uriBuilder.build()).request(APPLICATION_JSON).buildGet().invoke();
             Response prestoState = client.target(uriBuilder.path("/state").build())
                     .request(APPLICATION_JSON).buildGet().invoke();

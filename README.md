@@ -68,6 +68,20 @@ The documentation for the Agent and Controller APIs will be located at these dir
 [`project-root/presto-agent/target/swagger/asciidoc/paths.adoc`]: project-root/presto-agent/target/swagger/asciidoc/paths.adoc
 [`project-root/presto-controller/target/swagger/asciidoc/paths.adoc`]: project-root/presto-controller/target/swagger/asciidoc/paths.adoc
 
+## Configuration
+
+Each Presto Manager process requires two configuration files:
+the main configuration file, and a log levels file.
+
+By default, the controller and agent will look to `etc/controller.properties`
+and `etc/agent.properties` for their main configuration files, respectively.
+To override this behavior, set the system property `config` to the file you
+would like to use.
+
+For convenience, sample configurations for the Agent and Controller are 
+provided in the git repository under `etc/`. The sample files also contain
+descriptions for each property.
+
 ## License
 
 This project is licensed under the Apache License.

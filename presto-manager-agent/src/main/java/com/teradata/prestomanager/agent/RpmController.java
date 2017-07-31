@@ -13,7 +13,11 @@
  */
 package com.teradata.prestomanager.agent;
 
+import com.google.inject.Inject;
+import com.teradata.prestomanager.agent.CommandExecutor.CommandResult;
 import io.airlift.log.Logger;
+
+import javax.ws.rs.client.Client;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,18 +25,38 @@ import java.net.URL;
 import java.nio.file.Path;
 
 import static com.teradata.prestomanager.agent.AgentFileUtils.downloadFile;
-import static com.teradata.prestomanager.agent.CommandExecutor.execCommandResult;
-import static com.teradata.prestomanager.agent.CommandExecutor.executeCommand;
-import static com.teradata.prestomanager.agent.PrestoConfigUtils.addConfigFiles;
-import static com.teradata.prestomanager.agent.PrestoConfigUtils.addConnectors;
-import static com.teradata.prestomanager.agent.PrestoConfigUtils.deployConfigFiles;
-import static com.teradata.prestomanager.agent.PrestoConfigUtils.storeConfigFiles;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
+// TODO: Add helper functions for execute("sudo", "rpm", args) and execute("service", "presto", arg)
 public class RpmController
         extends PackageController
 {
     private static final Logger LOGGER = Logger.get(RpmController.class);
+
+    private final Path configDir;
+    private final Path catalogDir;
+    private final Path dataDir;
+    private final Path pluginDir;
+    private final Path launcherScript;
+    private final CommandExecutor executor;
+    private final PrestoConfigDeployer configUtils;
+
+    // TODO: Inject less into here, if possible
+    @Inject
+    RpmController(PrestoConfig config, Client client,
+            PrestoInformer informer, CommandExecutor executor,
+            PrestoConfigDeployer configUtils)
+    {
+        super(client, informer);
+        configDir = requireNonNull(config.getConfigurationDirectory());
+        catalogDir = requireNonNull(config.getCatalogDirectory());
+        dataDir = requireNonNull(config.getDataDirectory());
+        pluginDir = requireNonNull(config.getPluginDirectory());
+        launcherScript = requireNonNull(config.getLauncherPath());
+        this.executor = requireNonNull(executor);
+        this.configUtils = requireNonNull(configUtils);
+    }
 
     public void installAsync(URL packageUrl, boolean checkDependencies)
             throws PrestoManagerException
@@ -41,16 +65,18 @@ public class RpmController
         try {
             int installRpm;
             if (checkDependencies) {
-                installRpm = executeCommand(SUBPROCESS_TIMEOUT, "sudo", "rpm", "-iv", tempFile.toString());
+                installRpm = executor.runLongCommand(
+                        "sudo", "rpm", "-iv", tempFile.toString());
             }
             else {
-                installRpm = executeCommand(SUBPROCESS_TIMEOUT, "sudo", "rpm", "-iv", "--nodeps", tempFile.toString());
+                installRpm = executor.runLongCommand(
+                        "sudo", "rpm", "-iv", "--nodeps", tempFile.toString());
             }
             if (installRpm != 0) {
                 throw new PrestoManagerException("Failed to install Presto", installRpm);
             }
-            addConfigFiles(CONFIG_DIR);
-            addConnectors(CATALOG_DIR);
+            configUtils.addConfigFiles(configDir, dataDir, pluginDir);
+            configUtils.addConnectors(catalogDir);
             LOGGER.debug("Successfully installed Presto");
         }
         finally {
@@ -60,7 +86,7 @@ public class RpmController
         }
     }
 
-    private static File getRpmPackage(URL packageUrl)
+    private File getRpmPackage(URL packageUrl)
             throws PrestoManagerException
     {
         Path tempFile;
@@ -70,7 +96,8 @@ public class RpmController
         catch (IOException e) {
             throw new PrestoManagerException(format("Failed to download file: %s", packageUrl.toString()), e);
         }
-        int checkRpm = executeCommand("rpm", "-Kv", "--nosignature", tempFile.toString());
+        int checkRpm = executor.runCommand(
+                "rpm", "-Kv", "--nosignature", tempFile.toString());
         if (checkRpm != 0) {
             throw new PrestoManagerException("Corrupted RPM", checkRpm);
         }
@@ -82,10 +109,12 @@ public class RpmController
     {
         int uninstallPackage;
         if (checkDependencies) {
-            uninstallPackage = executeCommand(SUBPROCESS_TIMEOUT, "sudo", "rpm", "-e", "presto-server-rpm");
+            uninstallPackage = executor.runLongCommand(
+                    "sudo", "rpm", "-e", "presto-server-rpm");
         }
         else {
-            uninstallPackage = executeCommand(SUBPROCESS_TIMEOUT, "sudo", "rpm", "-e", "--nodeps", "presto-server-rpm");
+            uninstallPackage = executor.runLongCommand(
+                    "sudo", "rpm", "-e", "--nodeps", "presto-server-rpm");
         }
         if (uninstallPackage != 0) {
             throw new PrestoManagerException(format("Failed to uninstall package: %s", "presto-server-rpm"), uninstallPackage);
@@ -99,10 +128,10 @@ public class RpmController
         File tempPackage = getRpmPackage(packageUrl);
         try {
             if (preserveConfig) {
-                File tempConfig = storeConfigFiles(CONFIG_DIR);
+                File tempConfig = configUtils.storeConfigFiles(configDir);
                 try {
                     upgradePackage(tempPackage.toString(), checkDependencies);
-                    deployConfigFiles(tempConfig, CONFIG_DIR);
+                    configUtils.deployConfigFiles(tempConfig, configDir);
                 }
                 finally {
                     if (!tempConfig.delete()) {
@@ -112,8 +141,8 @@ public class RpmController
             }
             else {
                 upgradePackage(tempPackage.toString(), checkDependencies);
-                addConfigFiles(CONFIG_DIR);
-                addConnectors(CATALOG_DIR);
+                configUtils.addConfigFiles(configDir, dataDir, pluginDir);
+                configUtils.addConnectors(catalogDir);
             }
         }
         finally {
@@ -129,10 +158,10 @@ public class RpmController
     {
         int upgradeRpm;
         if (checkDependencies) {
-            upgradeRpm = executeCommand(SUBPROCESS_TIMEOUT, "sudo", "rpm", "-U", pathToRpm);
+            upgradeRpm = executor.runLongCommand("sudo", "rpm", "-U", pathToRpm);
         }
         else {
-            upgradeRpm = executeCommand(SUBPROCESS_TIMEOUT, "sudo", "rpm", "-U", "--nodeps", pathToRpm);
+            upgradeRpm = executor.runLongCommand("sudo", "rpm", "-U", "--nodeps", pathToRpm);
         }
         if (upgradeRpm != 0) {
             throw new PrestoManagerException("Failed to upgrade Presto", upgradeRpm);
@@ -142,7 +171,7 @@ public class RpmController
     public void startAsync()
             throws PrestoManagerException
     {
-        int startPresto = executeCommand(SUBPROCESS_TIMEOUT, "service", "presto", "start");
+        int startPresto = executor.runLongCommand("service", "presto", "start");
         if (startPresto != 0) {
             throw new PrestoManagerException("Failed to start Presto", startPresto);
         }
@@ -151,7 +180,7 @@ public class RpmController
     public void terminate()
             throws PrestoManagerException
     {
-        int prestoTerminate = executeCommand("service", "presto", "stop");
+        int prestoTerminate = executor.runCommand("service", "presto", "stop");
         if (prestoTerminate != 0) {
             throw new PrestoManagerException("Failed to stop presto", prestoTerminate);
         }
@@ -160,8 +189,8 @@ public class RpmController
     public void kill()
             throws PrestoManagerException
     {
-        executeCommand("sudo", LAUNCHER_SCRIPT.toString(), "kill");
-        int prestoKill = executeCommand("service", "presto", "status");
+        executor.runCommand("sudo", launcherScript.toString(), "kill");
+        int prestoKill = executor.runCommand("service", "presto", "status");
         if (prestoKill != 3) {
             throw new PrestoManagerException("Failed to stop presto", prestoKill);
         }
@@ -170,7 +199,7 @@ public class RpmController
     public void restartAsync()
             throws PrestoManagerException
     {
-        int prestoRestart = executeCommand(SUBPROCESS_TIMEOUT, "service", "presto", "restart");
+        int prestoRestart = executor.runLongCommand("service", "presto", "restart");
         if (prestoRestart != 0) {
             throw new PrestoManagerException("Failed to restart presto", prestoRestart);
         }
@@ -179,7 +208,8 @@ public class RpmController
     public String getVersion()
             throws PrestoManagerException
     {
-        CommandExecutor.CommandResult commandResult = execCommandResult("rpm", "-q", "--qf", "%{VERSION}", "presto-server-rpm");
+        CommandResult commandResult = executor.getCommandResult(
+                "rpm", "-q", "--qf", "%{VERSION}", "presto-server-rpm");
         if (commandResult.getExitValue() != 0) {
             throw new PrestoManagerException("Failed to retrieve Presto version", commandResult.getExitValue());
         }
@@ -189,12 +219,12 @@ public class RpmController
     public boolean isInstalled()
             throws PrestoManagerException
     {
-        return executeCommand("rpm", "-q", "presto-server-rpm") == 0;
+        return executor.runCommand("rpm", "-q", "presto-server-rpm") == 0;
     }
 
     public boolean isRunning()
             throws PrestoManagerException
     {
-        return isInstalled() && executeCommand("service", "presto", "status") == 0;
+        return isInstalled() && executor.runCommand("service", "presto", "status") == 0;
     }
 }

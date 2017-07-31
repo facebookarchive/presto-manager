@@ -15,5 +15,14 @@ package com.teradata.prestomanager.agent;
 
 public enum PackageType
 {
-    RPM, TARBALL
+    RPM, TARBALL;
+
+    public static PackageType fromString(String type)
+    {
+        type = type.toUpperCase();
+        if ("TAR".equals(type)) {
+            return TARBALL;
+        }
+        return valueOf(type);
+    }
 }

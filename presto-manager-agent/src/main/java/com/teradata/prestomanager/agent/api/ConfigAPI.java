@@ -13,8 +13,10 @@
  */
 package com.teradata.prestomanager.agent.api;
 
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.teradata.prestomanager.agent.APIFileHandler;
+import com.teradata.prestomanager.agent.PrestoConfig;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -32,14 +34,21 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import java.nio.file.Paths;
+import static java.util.Objects.requireNonNull;
 
 @Path("/config")
 @Api(description = "API to read and write to Presto configuration files")
 @Singleton
 public final class ConfigAPI
 {
-    private static final APIFileHandler apiFileHandler = new APIFileHandler(Paths.get("/etc/presto"));
+    private final APIFileHandler apiFileHandler;
+
+    @Inject
+    public ConfigAPI(PrestoConfig config)
+    {
+        apiFileHandler = new APIFileHandler(
+                requireNonNull(config.getConfigurationDirectory()));
+    }
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
