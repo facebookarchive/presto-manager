@@ -212,7 +212,7 @@ public class PrestoRpmController
         return isInstalled() && executeCommand("service", "presto", "status") == 0;
     }
 
-    private static void terminatePresto()
+    public static void terminatePresto()
             throws PrestoManagerException
     {
         int prestoTerminate = executeCommand("service", "presto", "stop");
