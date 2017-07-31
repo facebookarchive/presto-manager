@@ -67,7 +67,7 @@ public class PrestoRpmController
         }
         catch (PrestoManagerException e) {
             LOGGER.error(e.getCause(), e.getMessage());
-            return Response.status(INTERNAL_SERVER_ERROR).build();
+            return Response.status(INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
         }
         new Thread(() -> {
             try {
@@ -89,11 +89,11 @@ public class PrestoRpmController
         try {
             if (!isInstalled()) {
                 LOGGER.error("Presto is not installed");
-                return Response.status(NOT_FOUND).build();
+                return Response.status(NOT_FOUND).entity("Presto is not installed").build();
             }
             if (!isRunning()) {
                 LOGGER.info("Presto is not running");
-                return Response.status(OK).build();
+                return Response.status(OK).entity("Presto is not running").build();
             }
             switch (stopType) {
                 case TERMINATE:
@@ -105,20 +105,20 @@ public class PrestoRpmController
                 case GRACEFUL:
                     if (isCoordinator()) {
                         LOGGER.error("Coordinator can't be gracefully stopped.");
-                        return Response.status(CONFLICT).build();
+                        return Response.status(CONFLICT).entity("Coordinator can't be gracefully stopped").build();
                     }
                     gracefulStop();
                     break;
                 default:
                     LOGGER.error("Invalid stop type: %s", stopType);
-                    return Response.status(INTERNAL_SERVER_ERROR).build();
+                    return Response.status(INTERNAL_SERVER_ERROR).entity("Invalid stop type").build();
             }
         }
         catch (PrestoManagerException e) {
             LOGGER.error(e.getCause(), e.getMessage());
-            return Response.status(INTERNAL_SERVER_ERROR).build();
+            return Response.status(INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
         }
-        return Response.status(OK).build();
+        return Response.status(OK).entity("Presto successfully stopped").build();
     }
 
     public Response restartUsingRpm()
@@ -126,7 +126,7 @@ public class PrestoRpmController
         try {
             if (!isInstalled()) {
                 LOGGER.error("Presto is not installed");
-                return Response.status(NOT_FOUND).build();
+                return Response.status(NOT_FOUND).entity("Presto is not installed").build();
             }
             int prestoRestart = executeCommand(SUBPROCESS_TIMEOUT, "service", "presto", "restart");
             if (prestoRestart != 0) {
@@ -135,9 +135,9 @@ public class PrestoRpmController
         }
         catch (PrestoManagerException e) {
             LOGGER.error(e.getCause(), e.getMessage());
-            return Response.status(INTERNAL_SERVER_ERROR).build();
+            return Response.status(INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
         }
-        return Response.status(OK).build();
+        return Response.status(OK).entity("Presto successfully restarted").build();
     }
 
     /**
@@ -161,7 +161,7 @@ public class PrestoRpmController
         }
         catch (PrestoManagerException e) {
             LOGGER.error(e.getCause(), e.getMessage());
-            return Response.status(INTERNAL_SERVER_ERROR).build();
+            return Response.status(INTERNAL_SERVER_ERROR).entity(GSON.toJson(e.getMessage())).type(APPLICATION_JSON).build();
         }
         try {
             String prestoPort = getPrestoPort();
