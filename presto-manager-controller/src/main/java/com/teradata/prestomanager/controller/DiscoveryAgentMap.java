@@ -49,7 +49,7 @@ public class DiscoveryAgentMap
     public DiscoveryAgentMap(
             @ServiceType("presto-manager") ServiceSelector serviceSelector)
     {
-        this.serviceSelector = serviceSelector;
+        this.serviceSelector = requireNonNull(serviceSelector);
     }
 
     @Override

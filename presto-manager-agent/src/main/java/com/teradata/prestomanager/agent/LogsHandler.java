@@ -13,6 +13,7 @@
  */
 package com.teradata.prestomanager.agent;
 
+import com.google.inject.Inject;
 import io.airlift.log.Logger;
 
 import javax.ws.rs.core.Response;
@@ -24,7 +25,6 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.time.chrono.IsoChronology;
@@ -32,6 +32,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -44,14 +45,11 @@ import static java.util.Objects.requireNonNull;
 /**
  * Utility class managing retrieval and deletion of Presto logs
  */
-public final class LogsHandler
+public class LogsHandler
 {
     private static final Logger LOG = Logger.get(LogsHandler.class);
 
     public static final String DEFAULT_LOG_LEVEL = "ALL";
-
-    // TODO: Make most of these 'private static final' values configurable
-    private static final Path LOG_DIRECTORY = Paths.get("var/log/presto");
 
     private static final DateTimeFormatter DATE_FORMAT = new DateTimeFormatterBuilder()
             .parseCaseInsensitive().parseStrict()
@@ -59,23 +57,39 @@ public final class LogsHandler
             .appendPattern("Z")
             .toFormatter().withChronology(IsoChronology.INSTANCE);
 
-    // TODO: When these are configurable, check that the group names are present
     private static final String DATE_GROUP = "date";
     private static final String LEVEL_GROUP = "level";
-    private static final Pattern LOG_REGEX = Pattern.compile(
-            "^(?<date>[0-9]{4}-[0-9]{2}-[0-9]{2}T" +
-                    "[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{3})?[+-][0-9]{4})" +
-                    "\t(?<level>[A-Z]+)\t(?<thread>[^\t]+)" +
-                    "\t(?<class>[^\t]+)\t(?<message>.*)$");
-    private static final String DEFAULT_ENTRY = "0000-01-01T00:00:00.000+0000" +
-            "\tALL\t[none]\t[none]\tThis log entry was not preceded by a header:";
 
-    private LogsHandler() {}
+    private final Path logDirectory;
+    private final Pattern logPattern;
+    private final String defaultEntry;
 
-    public static Response getLogList()
+    @Inject
+    private LogsHandler(AgentConfig config, PrestoConfig prestoConfig)
+    {
+        logDirectory = requireNonNull(prestoConfig.getLogDirectory());
+        defaultEntry = requireNonNull(config.getDefaultLogEntry());
+        logPattern = Pattern.compile(requireNonNull(config.getLogEntryPattern()));
+
+        Matcher matcher = logPattern.matcher(defaultEntry);
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException(
+                    "Default entry does not match log entry pattern");
+        }
+        try {
+            matcher.group(DATE_GROUP);
+            matcher.group(LEVEL_GROUP);
+        }
+        catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                    "Log pattern should have groups named \"date\" and \"level\"", e);
+        }
+    }
+
+    public Response getLogList()
     {
         String fileList;
-        try (Stream<java.nio.file.Path> files = Files.list(LOG_DIRECTORY)) {
+        try (Stream<Path> files = Files.list(logDirectory)) {
             fileList = files.filter(Files::isRegularFile)
                     .map(Path::getFileName)
                     .map(Path::toString)
@@ -99,7 +113,7 @@ public final class LogsHandler
     /**
      * Method called in response to GET request
      */
-    public static Response getLogs(String filename, Instant start,
+    public Response getLogs(String filename, Instant start,
             Instant end, String logLevel, Integer maxEntries)
     {
         requireNonNull(logLevel);
@@ -117,7 +131,7 @@ public final class LogsHandler
 
         Path filePath;
         try {
-            filePath = LOG_DIRECTORY.resolve(filename);
+            filePath = logDirectory.resolve(filename);
         }
         catch (InvalidPathException e) {
             return badRequest("Invalid file name");
@@ -127,8 +141,8 @@ public final class LogsHandler
         try {
             logFilter = LogFilter.builder()
                     .setFile(filePath)
-                    .setPattern(LOG_REGEX)
-                    .setDefaultEntry(DEFAULT_ENTRY)
+                    .setPattern(logPattern)
+                    .setDefaultEntry(defaultEntry)
                     .setLineSeparator("\r\n")
                     .setCapacity(maxEntries == null ? Integer.MAX_VALUE : maxEntries)
                     .keepFirst(start != null)
@@ -171,11 +185,11 @@ public final class LogsHandler
     /**
      * Method called in response to DELETE request
      */
-    public static Response deleteLogs(String filename, Instant end)
+    public Response deleteLogs(String filename, Instant end)
     {
         Path filePath;
         try {
-            filePath = LOG_DIRECTORY.resolve(filename);
+            filePath = logDirectory.resolve(filename);
         }
         catch (InvalidPathException e) {
             return badRequest("Invalid file name");
@@ -197,7 +211,7 @@ public final class LogsHandler
         }
     }
 
-    private static Response deleteLogRange(Path filePath, Instant end)
+    private Response deleteLogRange(Path filePath, Instant end)
     {
         requireNonNull(filePath);
         requireNonNull(end);
@@ -206,8 +220,8 @@ public final class LogsHandler
         try {
             logFilter = LogFilter.builder()
                     .setFile(filePath)
-                    .setPattern(LOG_REGEX)
-                    .setDefaultEntry(DEFAULT_ENTRY)
+                    .setPattern(logPattern)
+                    .setDefaultEntry(defaultEntry)
                     .addGroupFilter(DATE_GROUP, getFilter(end, null))
                     .build();
         }
