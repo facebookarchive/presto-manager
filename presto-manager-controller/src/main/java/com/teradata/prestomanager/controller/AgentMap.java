@@ -31,7 +31,7 @@ public interface AgentMap
     default Map<UUID, URI> getUrisByScope(ApiScope scope)
     {
         switch (scope) {
-            case CLUSTER:
+            case ALL:
                 return getAllUris();
             case WORKERS:
                 return getWorkerUris();

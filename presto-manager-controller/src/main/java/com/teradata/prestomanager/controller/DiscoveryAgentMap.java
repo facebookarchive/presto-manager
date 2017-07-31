@@ -37,16 +37,16 @@ import java.util.stream.Collector;
 import static java.util.Objects.requireNonNull;
 
 @ThreadSafe
-public class NodeSet
+public class DiscoveryAgentMap
     implements AgentMap
 {
-    private static final Logger LOG = Logger.get(NodeSet.class);
+    private static final Logger LOG = Logger.get(DiscoveryAgentMap.class);
 
     private Set<Agent> agentSet = ImmutableSet.of();
     private ServiceSelector serviceSelector;
 
     @Inject
-    public NodeSet(
+    public DiscoveryAgentMap(
             @ServiceType("presto-manager") ServiceSelector serviceSelector)
     {
         this.serviceSelector = serviceSelector;

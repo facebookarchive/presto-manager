@@ -15,7 +15,7 @@ package com.teradata.prestomanager.controller;
 
 public enum ApiScope
 {
-    CLUSTER, WORKERS, COORDINATOR;
+    ALL, WORKERS, COORDINATOR;
 
     public static ApiScope fromString(String s)
     {
