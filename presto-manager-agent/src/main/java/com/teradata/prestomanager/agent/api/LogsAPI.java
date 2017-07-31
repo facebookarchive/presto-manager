@@ -13,6 +13,7 @@
  */
 package com.teradata.prestomanager.agent.api;
 
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.teradata.prestomanager.agent.LogsHandler;
 import io.swagger.annotations.Api;
@@ -38,13 +39,21 @@ import java.time.Instant;
 @Singleton
 public class LogsAPI
 {
+    private final LogsHandler logsHandler;
+
+    @Inject
+    public LogsAPI(LogsHandler logsHandler)
+    {
+        this.logsHandler = logsHandler;
+    }
+
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get a listing of log files")
     @ApiResponses({@ApiResponse(code = 200, message = "Retrieved file list")})
     public Response getLogList()
     {
-        return LogsHandler.getLogList();
+        return logsHandler.getLogList();
     }
 
     @GET
@@ -62,7 +71,7 @@ public class LogsAPI
             @QueryParam("level") @ApiParam("Only get logs of this level") @DefaultValue(LogsHandler.DEFAULT_LOG_LEVEL) String level,
             @QueryParam("n") @ApiParam("The maximum number of log entries to get") Integer maxEntries)
     {
-        return LogsHandler.getLogs(file, fromDate, toDate, level, maxEntries);
+        return logsHandler.getLogs(file, fromDate, toDate, level, maxEntries);
     }
 
     @DELETE
@@ -77,6 +86,6 @@ public class LogsAPI
             @PathParam("file") @ApiParam("The name of a file") String file,
             @QueryParam("to") @ApiParam("Ignore logs after this date") Instant toDate)
     {
-        return LogsHandler.deleteLogs(file, toDate);
+        return logsHandler.deleteLogs(file, toDate);
     }
 }

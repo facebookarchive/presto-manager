@@ -13,9 +13,9 @@
  */
 package com.teradata.prestomanager.agent.api;
 
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.teradata.prestomanager.agent.PackageController;
-import com.teradata.prestomanager.agent.RpmController;
 import com.teradata.prestomanager.common.StopType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -39,7 +39,13 @@ import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 @Singleton
 public class ControlAPI
 {
-    private static final PackageController CONTROLLER = new RpmController();
+    private final PackageController controller;
+
+    @Inject
+    public ControlAPI(PackageController controller)
+    {
+        this.controller = controller;
+    }
 
     @POST
     @Path("/start")
@@ -50,7 +56,7 @@ public class ControlAPI
             @ApiResponse(code = 404, message = "Presto is not installed")})
     public synchronized Response startPresto()
     {
-        return CONTROLLER.start();
+        return controller.start();
     }
 
     @POST
@@ -63,7 +69,7 @@ public class ControlAPI
     public synchronized Response stopPresto(@QueryParam("stopType") @ApiParam("StopType: TERMINATE, KILL or GRACEFUL")
     @DefaultValue("GRACEFUL") StopType stopType)
     {
-        return CONTROLLER.stop(stopType);
+        return controller.stop(stopType);
     }
 
     @POST
@@ -74,7 +80,7 @@ public class ControlAPI
             @ApiResponse(code = 404, message = "Presto is not installed")})
     public synchronized Response restartPresto()
     {
-        return CONTROLLER.restart();
+        return controller.restart();
     }
 
     @GET
@@ -85,6 +91,6 @@ public class ControlAPI
             @ApiResponse(code = 200, message = "Successfully retrieved Presto status")})
     public synchronized Response prestoStatus()
     {
-        return CONTROLLER.status();
+        return controller.status();
     }
 }

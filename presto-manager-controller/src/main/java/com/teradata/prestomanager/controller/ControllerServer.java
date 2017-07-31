@@ -34,12 +34,9 @@ public class ControllerServer
     public static void main(String[] args)
             throws Exception
     {
-        // TODO: Replace placeholder properties with proper configuration
-        System.setProperty("node.environment", "test");
-        System.setProperty("http-server.http.port", "8088");
-        System.setProperty("log.levels-file", "etc/log.properties");
-        System.setProperty("discovery.uri", "http://localhost:"
-                + System.getProperty("http-server.http.port"));
+        if (System.getProperty("config", null) == null) {
+            System.setProperty("config", "etc/controller.properties");
+        }
 
         Bootstrap bootstrap = new Bootstrap(
                 new NodeModule(),
