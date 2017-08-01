@@ -13,6 +13,7 @@
  */
 package com.teradata.prestomanager.agent.api;
 
+import com.google.inject.Singleton;
 import com.teradata.prestomanager.agent.PrestoCommand;
 import com.teradata.prestomanager.agent.PrestoInstaller;
 import com.teradata.prestomanager.agent.PrestoManagerException;
@@ -25,7 +26,6 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
-import javax.inject.Singleton;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -124,7 +124,7 @@ public final class PackageAPI
             new Thread(new PrestoAsynchronousCommand(new PrestoUpgrader(RPM, url, checkDependencies, preserveConfig))).start();
         }
         catch (PrestoManagerException e) {
-            LOGGER.error(e,  "Failed to ascertain whether presto is running");
+            LOGGER.error(e, "Failed to ascertain whether presto is running");
             return Response.status(INTERNAL_SERVER_ERROR).entity("Failed to ascertain whether presto is running").build();
         }
         catch (MalformedURLException e) {

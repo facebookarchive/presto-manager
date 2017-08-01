@@ -14,6 +14,7 @@
 package com.teradata.prestomanager.agent.api;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.teradata.prestomanager.agent.PrestoRpmController;
 import com.teradata.prestomanager.common.StopType;
 import io.swagger.annotations.Api;
@@ -22,7 +23,6 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
-import javax.inject.Singleton;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -53,9 +53,7 @@ public class ControlAPI
     @ApiOperation(value = "Start presto")
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request"),
-            @ApiResponse(code = 404, message = "Presto is not installed"),
-            @ApiResponse(code = 500, message = "Failed to start presto")
-    })
+            @ApiResponse(code = 404, message = "Presto is not installed")})
     public synchronized Response startPresto()
     {
         return controller.startUsingRpm();
@@ -67,9 +65,7 @@ public class ControlAPI
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successfully stopped presto"),
             @ApiResponse(code = 404, message = "Presto is not installed"),
-            @ApiResponse(code = 409, message = "Coordinator can't be gracefully stopped"),
-            @ApiResponse(code = 500, message = "Failed to stop presto")
-    })
+            @ApiResponse(code = 409, message = "Coordinator can't be gracefully stopped")})
     public synchronized Response stopPresto(@QueryParam("stopType") @ApiParam("StopType: TERMINATE, KILL or GRACEFUL")
     @DefaultValue("GRACEFUL") StopType stopType)
     {
@@ -81,9 +77,7 @@ public class ControlAPI
     @ApiOperation(value = "Restart presto")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successfully restarted presto"),
-            @ApiResponse(code = 404, message = "Presto is not installed"),
-            @ApiResponse(code = 500, message = "Failed to restart presto")
-    })
+            @ApiResponse(code = 404, message = "Presto is not installed")})
     public synchronized Response restartPresto()
     {
         return controller.restartUsingRpm();
@@ -94,9 +88,7 @@ public class ControlAPI
     @Produces(APPLICATION_JSON)
     @ApiOperation(value = "Get presto status")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved presto status"),
-            @ApiResponse(code = 500, message = "Failed to get presto status")
-    })
+            @ApiResponse(code = 200, message = "Successfully retrieved presto status")})
     public synchronized Response prestoStatus()
     {
         return controller.statusUsingRpm();
