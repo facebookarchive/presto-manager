@@ -102,9 +102,9 @@ public class APIFileHandler
     {
         try {
             AgentFileUtils.updateProperty(Paths.get(baseDir.toString(), path), property, value);
-            LOGGER.debug("Updating property '%s' of file '%s' to '%s' in progress", property, path, value);
-            return Response.status(Status.ACCEPTED)
-                    .entity("Updating property of file in progress").build();
+            LOGGER.debug("Updating property '%s' of file '%s' to '%s'", property, path, value);
+            return Response.status(Status.OK)
+                    .entity("Successfully updates the property of file").build();
         }
         catch (FileNotFoundException e) {
             LOGGER.error(e, "File '%s' not found", path);
