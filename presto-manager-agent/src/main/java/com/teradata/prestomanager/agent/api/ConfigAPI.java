@@ -25,6 +25,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -75,6 +76,21 @@ public final class ConfigAPI
             @PathParam("property") @ApiParam("A specific property") String property)
     {
         return apiFileHandler.getFileProperty(file, property);
+    }
+
+    @PUT
+    @Path("/{file}/{property}")
+    @Produces({MediaType.TEXT_PLAIN})
+    @ApiOperation(value = "Update or create a certain property of configuration file")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Property updated or created"),
+            @ApiResponse(code = 404, message = "Resource not found")})
+    public synchronized Response updateConfigProperty(
+            @PathParam("file") @ApiParam("The name of a file") String file,
+            @PathParam("property") @ApiParam("A specific property") String property,
+            String value)
+    {
+        return apiFileHandler.updateProperty(file, property, value);
     }
 
     @POST

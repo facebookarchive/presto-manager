@@ -25,6 +25,7 @@ import io.swagger.annotations.ApiResponses;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -40,6 +41,7 @@ import java.util.UUID;
 import static org.eclipse.jetty.http.HttpMethod.DELETE;
 import static org.eclipse.jetty.http.HttpMethod.GET;
 import static org.eclipse.jetty.http.HttpMethod.POST;
+import static org.eclipse.jetty.http.HttpMethod.PUT;
 
 @Path("/connectors")
 @Singleton
@@ -112,6 +114,32 @@ public class ControllerConnectorAPI
                 .resolveTemplate("file", file)
                 .resolveTemplate("property", property)
                 .accept(MediaType.TEXT_PLAIN)
+                .build();
+
+        return forwardRequest(scope, apiRequester, nodeId);
+    }
+
+    @PUT
+    @Path("/{file}/{property}")
+    @Produces({MediaType.TEXT_PLAIN})
+    @ApiOperation(value = "Update or create a certain property of connector file")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+    public Response updateConnectorProperty(
+            @PathParam("file") String file,
+            @PathParam("property") String property,
+            String value,
+            @QueryParam("scope") String scope,
+            @QueryParam("nodeId") List<UUID> nodeId)
+    {
+        ApiRequester apiRequester = requesterBuilder(ControllerConnectorAPI.class)
+                .pathMethod("updateConnectorProperty")
+                .httpMethod(PUT)
+                .resolveTemplate("file", file)
+                .resolveTemplate("property", property)
+                .accept(MediaType.TEXT_PLAIN)
+                .entity(Entity.entity(value, MediaType.TEXT_PLAIN))
                 .build();
 
         return forwardRequest(scope, apiRequester, nodeId);
