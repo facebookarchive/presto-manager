@@ -14,11 +14,15 @@
 package com.teradata.prestomanager.controller.api;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.teradata.prestomanager.common.ApiRequester;
 import com.teradata.prestomanager.controller.AbstractControllerAPI;
 import com.teradata.prestomanager.controller.RequestDispatcher;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
-import javax.inject.Singleton;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -39,6 +43,7 @@ import static org.eclipse.jetty.http.HttpMethod.GET;
 import static org.eclipse.jetty.http.HttpMethod.POST;
 
 @Path("/config")
+@Api(description = "the controller config API")
 @Singleton
 public class ControllerConfigAPI
         extends AbstractControllerAPI
@@ -53,6 +58,10 @@ public class ControllerConfigAPI
 
     @GET
     @Produces({MediaType.TEXT_PLAIN})
+    @ApiOperation(value = "Get available configuration files")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
     public Response getConfig(@QueryParam("scope") String scope,
             @QueryParam("nodeId") List<UUID> nodeId)
     {
@@ -67,6 +76,10 @@ public class ControllerConfigAPI
     @GET
     @Path("/{file}")
     @Produces({MediaType.TEXT_PLAIN})
+    @ApiOperation(value = "Get configuration by file")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
     public Response getConfigFile(
             @PathParam("file") String file,
             @QueryParam("scope") String scope,
@@ -85,6 +98,10 @@ public class ControllerConfigAPI
     @GET
     @Path("/{file}/{property}")
     @Produces({MediaType.TEXT_PLAIN})
+    @ApiOperation(value = "Get specific configuration property")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
     public Response getConfigProperty(
             @PathParam("file") String file,
             @PathParam("property") String property,
@@ -105,6 +122,10 @@ public class ControllerConfigAPI
     @POST
     @Path("/{file}")
     @Produces({MediaType.TEXT_PLAIN})
+    @ApiOperation(value = "Replace this file with the file at the given URL")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
     public Response setConfigFileByURL(
             String url,
             @PathParam("file") String file,
@@ -125,6 +146,10 @@ public class ControllerConfigAPI
     @DELETE
     @Path("/{file}")
     @Produces({MediaType.TEXT_PLAIN})
+    @ApiOperation(value = "Delete a configuration file")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
     public Response deleteConfigFile(
             @PathParam("file") String file,
             @QueryParam("scope") String scope,

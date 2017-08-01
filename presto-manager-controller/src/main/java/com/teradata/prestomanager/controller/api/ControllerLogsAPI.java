@@ -18,6 +18,10 @@ import com.google.inject.Singleton;
 import com.teradata.prestomanager.common.ApiRequester;
 import com.teradata.prestomanager.controller.AbstractControllerAPI;
 import com.teradata.prestomanager.controller.RequestDispatcher;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -38,6 +42,7 @@ import static org.eclipse.jetty.http.HttpMethod.DELETE;
 import static org.eclipse.jetty.http.HttpMethod.GET;
 
 @Path("/logs")
+@Api(description = "the controller logs API")
 @Singleton
 public class ControllerLogsAPI
         extends AbstractControllerAPI
@@ -52,6 +57,10 @@ public class ControllerLogsAPI
 
     @GET
     @Produces({MediaType.TEXT_PLAIN})
+    @ApiOperation(value = "Get a listing of log files")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
     public Response getConnectors(@QueryParam("scope") String scope,
             @QueryParam("nodeId") List<UUID> nodeId)
     {
@@ -66,6 +75,10 @@ public class ControllerLogsAPI
     @GET
     @Path("/{file}")
     @Produces({MediaType.TEXT_PLAIN})
+    @ApiOperation(value = "Get Presto log file")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
     public Response getLog(
             @PathParam("file") String file,
             @QueryParam("from") Instant fromDate,
@@ -92,6 +105,10 @@ public class ControllerLogsAPI
     @DELETE
     @Path("/{file}")
     @Produces({MediaType.TEXT_PLAIN})
+    @ApiOperation(value = "Delete Presto logs")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
     public Response deleteLog(
             @PathParam("file") String file,
             @QueryParam("to") Instant toDate,

@@ -19,6 +19,10 @@ import com.teradata.prestomanager.common.ApiRequester;
 import com.teradata.prestomanager.common.StopType;
 import com.teradata.prestomanager.controller.AbstractControllerAPI;
 import com.teradata.prestomanager.controller.RequestDispatcher;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -38,6 +42,7 @@ import static org.eclipse.jetty.http.HttpMethod.GET;
 import static org.eclipse.jetty.http.HttpMethod.POST;
 
 @Path("/presto")
+@Api(description = "controller API to start, stop, restart presto and get presto status")
 @Singleton
 public class ControllerControlAPI
         extends AbstractControllerAPI
@@ -52,7 +57,11 @@ public class ControllerControlAPI
 
     @POST
     @Path("/start")
+    @ApiOperation(value = "Start presto")
     @Produces(MediaType.TEXT_PLAIN)
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
     public Response startPresto(
             @QueryParam("scope") String scope,
             @QueryParam("nodeId") List<UUID> nodeId)
@@ -68,6 +77,10 @@ public class ControllerControlAPI
 
     @POST
     @Path("/stop")
+    @ApiOperation(value = "Stop presto")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
     public Response stopPresto(
             @QueryParam("stopType") @DefaultValue("GRACEFUL") StopType stopType,
             @QueryParam("scope") String scope,
@@ -84,6 +97,10 @@ public class ControllerControlAPI
 
     @POST
     @Path("/restart")
+    @ApiOperation(value = "Restart presto")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
     public Response restartPresto(
             @QueryParam("scope") String scope,
             @QueryParam("nodeId") List<UUID> nodeId)
@@ -99,6 +116,10 @@ public class ControllerControlAPI
     @GET
     @Path("/status")
     @Produces(APPLICATION_JSON)
+    @ApiOperation(value = "Get presto status")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
     public Response prestoStatus(
             @QueryParam("scope") String scope,
             @QueryParam("nodeId") List<UUID> nodeId)
