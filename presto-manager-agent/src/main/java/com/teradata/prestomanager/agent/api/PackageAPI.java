@@ -58,8 +58,8 @@ public final class PackageAPI
     private static final Logger LOGGER = Logger.get(PackageAPI.class);
 
     @PUT
-    @Consumes({TEXT_PLAIN})
-    @Produces({TEXT_PLAIN})
+    @Consumes(TEXT_PLAIN)
+    @Produces(TEXT_PLAIN)
     @ApiOperation(value = "Install presto using rpm or tarball")
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request"),
@@ -94,8 +94,8 @@ public final class PackageAPI
     }
 
     @POST
-    @Consumes({TEXT_PLAIN})
-    @Produces({TEXT_PLAIN})
+    @Consumes(TEXT_PLAIN)
+    @Produces(TEXT_PLAIN)
     @ApiOperation(value = "Upgrade presto")
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request"),

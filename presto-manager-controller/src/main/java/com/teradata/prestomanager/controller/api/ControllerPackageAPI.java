@@ -58,8 +58,8 @@ public class ControllerPackageAPI
     }
 
     @PUT
-    @Consumes({MediaType.TEXT_PLAIN})
-    @Produces({MediaType.TEXT_PLAIN})
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Install presto using rpm or tarball")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),
@@ -80,8 +80,8 @@ public class ControllerPackageAPI
     }
 
     @POST
-    @Consumes({MediaType.TEXT_PLAIN})
-    @Produces({MediaType.TEXT_PLAIN})
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Upgrade presto")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),

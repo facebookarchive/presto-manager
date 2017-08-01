@@ -42,7 +42,7 @@ public final class ConfigAPI
     private static final APIFileHandler apiFileHandler = new APIFileHandler(Paths.get("/etc/presto"));
 
     @GET
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get available configuration files")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved configuration")})
@@ -53,7 +53,7 @@ public final class ConfigAPI
 
     @GET
     @Path("/{file}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get configuration by file")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved file"),
@@ -66,7 +66,7 @@ public final class ConfigAPI
 
     @GET
     @Path("/{file}/{property}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get specific configuration property")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved property"),
@@ -80,7 +80,7 @@ public final class ConfigAPI
 
     @PUT
     @Path("/{file}/{property}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Update or create a certain property of configuration file")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Property updated or created"),
@@ -95,7 +95,7 @@ public final class ConfigAPI
 
     @POST
     @Path("/{file}")
-    @Consumes({MediaType.TEXT_PLAIN})
+    @Consumes(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Replace this file with the file at the given URL")
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request"),
