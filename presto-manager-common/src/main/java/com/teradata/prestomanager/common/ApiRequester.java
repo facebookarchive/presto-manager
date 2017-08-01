@@ -127,6 +127,10 @@ public class ApiRequester
 
         public Builder queryParam(String name, Object... values)
         {
+            for (Object o : values) {
+                requireNonNull(o);
+            }
+
             uriBuilder.queryParam(requireNonNull(name), requireNonNull(values));
             return this;
         }

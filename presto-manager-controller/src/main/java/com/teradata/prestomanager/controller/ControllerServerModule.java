@@ -19,8 +19,12 @@ import com.google.inject.Binder;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.teradata.prestomanager.common.InstantConverterProvider;
 import com.teradata.prestomanager.controller.api.ControllerConfigAPI;
 import com.teradata.prestomanager.controller.api.ControllerConnectorAPI;
+import com.teradata.prestomanager.controller.api.ControllerControlAPI;
+import com.teradata.prestomanager.controller.api.ControllerLogsAPI;
+import com.teradata.prestomanager.controller.api.ControllerPackageAPI;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import org.glassfish.jersey.client.JerseyClient;
 import org.glassfish.jersey.client.JerseyClientBuilder;
@@ -44,6 +48,10 @@ public class ControllerServerModule
 
         jaxrsBinder(binder).bind(ControllerConfigAPI.class);
         jaxrsBinder(binder).bind(ControllerConnectorAPI.class);
+        jaxrsBinder(binder).bind(ControllerLogsAPI.class);
+        jaxrsBinder(binder).bind(ControllerPackageAPI.class);
+        jaxrsBinder(binder).bind(ControllerControlAPI.class);
+        jaxrsBinder(binder).bind(InstantConverterProvider.class);
 
         discoveryBinder(binder).bindSelector("presto-manager");
     }
