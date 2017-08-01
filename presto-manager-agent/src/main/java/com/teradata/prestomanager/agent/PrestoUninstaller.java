@@ -28,13 +28,13 @@ public class PrestoUninstaller
     private static final int SUBPROCESS_TIMEOUT = 90;
 
     private final PackageType packageType;
-    private final boolean disableDependencyChecking;
+    private final boolean checkDependencies;
     private final boolean forceUninstall;
 
-    public PrestoUninstaller(PackageType packageType, boolean disableDependencyChecking, boolean forceUninstall)
+    public PrestoUninstaller(PackageType packageType, boolean checkDependencies, boolean forceUninstall)
     {
         this.packageType = requireNonNull(packageType);
-        this.disableDependencyChecking = requireNonNull(disableDependencyChecking);
+        this.checkDependencies = requireNonNull(checkDependencies);
         this.forceUninstall = requireNonNull(forceUninstall);
     }
 
@@ -43,7 +43,7 @@ public class PrestoUninstaller
     {
         switch (packageType) {
             case RPM:
-                uninstallUsingRpm(disableDependencyChecking, forceUninstall);
+                uninstallUsingRpm(checkDependencies, forceUninstall);
                 break;
             case TARBALL:
                 // TODO: Add tarball uninstallation
