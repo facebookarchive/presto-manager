@@ -18,6 +18,10 @@ import com.google.inject.Singleton;
 import com.teradata.prestomanager.common.ApiRequester;
 import com.teradata.prestomanager.controller.AbstractControllerAPI;
 import com.teradata.prestomanager.controller.RequestDispatcher;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -40,6 +44,7 @@ import static org.eclipse.jetty.http.HttpMethod.POST;
 import static org.eclipse.jetty.http.HttpMethod.PUT;
 
 @Path("/package")
+@Api(description = "the controller package API")
 @Singleton
 public class ControllerPackageAPI
         extends AbstractControllerAPI
@@ -55,6 +60,10 @@ public class ControllerPackageAPI
     @PUT
     @Consumes({MediaType.TEXT_PLAIN})
     @Produces({MediaType.TEXT_PLAIN})
+    @ApiOperation(value = "Install presto using rpm or tarball")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
     public Response install(String urlToFetchPackage,
             @QueryParam("checkDependencies") @DefaultValue("true") boolean checkDependencies,
             @QueryParam("scope") String scope,
@@ -73,6 +82,10 @@ public class ControllerPackageAPI
     @POST
     @Consumes({MediaType.TEXT_PLAIN})
     @Produces({MediaType.TEXT_PLAIN})
+    @ApiOperation(value = "Upgrade presto")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
     public Response upgrade(String urlToFetchPackage,
             @QueryParam("checkDependencies") @DefaultValue("true") boolean checkDependencies,
             @QueryParam("preserveConfig") @DefaultValue("true") boolean preserveConfig,
@@ -91,6 +104,10 @@ public class ControllerPackageAPI
     }
 
     @DELETE
+    @ApiOperation(value = "Uninstall presto")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple response available"),
+            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
     public Response uninstall(
             @QueryParam("checkDependencies") @DefaultValue("true") boolean checkDependencies,
             @QueryParam("ignoreErrors") @DefaultValue("false") boolean ignoreErrors,
