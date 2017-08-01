@@ -13,6 +13,7 @@
  */
 package com.teradata.prestomanager.agent;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -27,8 +28,10 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 
 import static com.teradata.prestomanager.agent.AgentFileUtils.getFileProperty;
+import static com.teradata.prestomanager.agent.CommandExecutor.execCommandResult;
 import static com.teradata.prestomanager.agent.CommandExecutor.executeCommand;
 import static java.lang.String.format;
 import static javax.ws.rs.client.Entity.entity;
@@ -142,7 +145,8 @@ public class PrestoRpmController
 
     /**
      * The status api can be used to ascertain whether presto is installed and running.
-     * If Presto is running, this method would return a JSON file containing the following details
+     * If Presto is installed, this method returns a JSON file containing Presto version
+     * If Presto is running, this method returns a JSON file containing the following details
      * nodeVersion : Presto version installed in the node
      * environment : The name of the environment
      * coordinator : Specifies whether the current node functions as a coordinator
@@ -152,12 +156,14 @@ public class PrestoRpmController
      */
     public Response statusUsingRpm()
     {
+        String prestoVersion;
         try {
             if (!isInstalled()) {
                 LOGGER.info("Presto is not installed");
                 return Response.status(OK).entity(GSON.toJson("Presto is not installed"))
                         .type(APPLICATION_JSON).build();
             }
+            prestoVersion = getVersion();
         }
         catch (PrestoManagerException e) {
             LOGGER.error(e.getCause(), e.getMessage());
@@ -176,8 +182,11 @@ public class PrestoRpmController
         }
         catch (ProcessingException e) {
             LOGGER.info("Presto is not running");
-            return Response.status(OK).entity(GSON.toJson("Presto is installed but not running"))
-                    .type(APPLICATION_JSON).build();
+            Map<String, Object> statusMap = ImmutableMap.of(
+                    "installed", true,
+                    "running", false,
+                    "version", prestoVersion);
+            return Response.status(OK).entity(GSON.toJson(statusMap)).type(APPLICATION_JSON).build();
         }
         catch (IOException e) {
             LOGGER.error(e, "Failed to get status.");
@@ -259,5 +268,15 @@ public class PrestoRpmController
             throw new PrestoManagerException("Failed to get Presto port number.", e);
         }
         return false;
+    }
+
+    private static String getVersion()
+            throws PrestoManagerException
+    {
+        CommandExecutor.CommandResult commandResult = execCommandResult("rpm", "-q", "--qf", "%{VERSION}", "presto-server-rpm");
+        if (commandResult.getExitValue() != 0) {
+            throw new PrestoManagerException("Failed to retrieve Presto version", commandResult.getExitValue());
+        }
+        return commandResult.getOutput();
     }
 }

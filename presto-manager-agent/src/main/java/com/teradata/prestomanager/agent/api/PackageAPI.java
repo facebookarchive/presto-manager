@@ -125,7 +125,8 @@ public final class PackageAPI
             LOGGER.error(e, "Invalid url: %s", urlToFetchPackage);
             return Response.status(BAD_REQUEST).entity("Invalid url").build();
         }
-        return Response.status(ACCEPTED).entity("Presto is being upgraded.").build();
+        return Response.status(ACCEPTED).entity("Presto is being upgraded.\r\n" +
+                "To verify that upgrade succeeded, check back later using the status API.").build();
     }
 
     @DELETE
