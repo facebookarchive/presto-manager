@@ -56,7 +56,7 @@ public class ControllerLogsAPI
     }
 
     @GET
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get a listing of log files")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),
@@ -74,7 +74,7 @@ public class ControllerLogsAPI
 
     @GET
     @Path("/{file}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get Presto log file")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),
@@ -104,7 +104,7 @@ public class ControllerLogsAPI
 
     @DELETE
     @Path("/{file}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Delete Presto logs")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),

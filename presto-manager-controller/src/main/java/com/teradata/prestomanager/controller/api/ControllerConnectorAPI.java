@@ -57,7 +57,7 @@ public class ControllerConnectorAPI
     }
 
     @GET
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get avaiable connector file names")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),
@@ -75,7 +75,7 @@ public class ControllerConnectorAPI
 
     @GET
     @Path("/{file}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get connector property by file")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),
@@ -97,7 +97,7 @@ public class ControllerConnectorAPI
 
     @GET
     @Path("/{file}/{property}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get connector property by file")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),
@@ -121,7 +121,7 @@ public class ControllerConnectorAPI
 
     @PUT
     @Path("/{file}/{property}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Update or create a certain property of connector file")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),
@@ -147,7 +147,7 @@ public class ControllerConnectorAPI
 
     @POST
     @Path("/{file}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Replace this file with the file at the given URL")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),
@@ -171,7 +171,7 @@ public class ControllerConnectorAPI
 
     @DELETE
     @Path("/{file}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Delete a connector file")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),

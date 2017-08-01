@@ -59,7 +59,7 @@ public class ControllerConfigAPI
     }
 
     @GET
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get available configuration files")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),
@@ -77,7 +77,7 @@ public class ControllerConfigAPI
 
     @GET
     @Path("/{file}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get configuration by file")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),
@@ -99,7 +99,7 @@ public class ControllerConfigAPI
 
     @GET
     @Path("/{file}/{property}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get specific configuration property")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),
@@ -123,7 +123,7 @@ public class ControllerConfigAPI
 
     @PUT
     @Path("/{file}/{property}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Update or create a certain property of configuration file")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),
@@ -149,7 +149,7 @@ public class ControllerConfigAPI
 
     @POST
     @Path("/{file}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Replace this file with the file at the given URL")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),
@@ -173,7 +173,7 @@ public class ControllerConfigAPI
 
     @DELETE
     @Path("/{file}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Delete a configuration file")
     @ApiResponses(value = {
             @ApiResponse(code = 207, message = "Multiple response available"),

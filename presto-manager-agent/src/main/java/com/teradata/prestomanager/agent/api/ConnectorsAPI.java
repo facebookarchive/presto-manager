@@ -41,7 +41,7 @@ public final class ConnectorsAPI
     private static final APIFileHandler apiFileHandler = new APIFileHandler(Paths.get("/etc/presto/catalog"));
 
     @GET
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get avaiable connector file names")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved configuration")})
@@ -52,7 +52,7 @@ public final class ConnectorsAPI
 
     @GET
     @Path("/{file}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get connector property by file")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved file"),
@@ -65,7 +65,7 @@ public final class ConnectorsAPI
 
     @GET
     @Path("/{file}/{property}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get specific connector property")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved property"),
@@ -79,7 +79,7 @@ public final class ConnectorsAPI
 
     @PUT
     @Path("/{file}/{property}")
-    @Produces({MediaType.TEXT_PLAIN})
+    @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Update or create a certain property of connector file")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Property updated or created"),
