@@ -18,9 +18,14 @@ import io.airlift.log.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 
 import static java.lang.String.format;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public final class CommandExecutor
 {
@@ -41,16 +46,28 @@ public final class CommandExecutor
     public static int executeCommand(String... command)
             throws PrestoManagerException
     {
+        return new CommandExecutor(command, DEFAULT_TIMEOUT).execute().getExitValue();
+    }
+
+    public static CommandResult execCommandResult(String... command)
+            throws PrestoManagerException
+    {
         return new CommandExecutor(command, DEFAULT_TIMEOUT).execute();
     }
 
     public static int executeCommand(int timeoutInSeconds, String... command)
             throws PrestoManagerException
     {
+        return new CommandExecutor(command, timeoutInSeconds).execute().getExitValue();
+    }
+
+    public static CommandResult execCommandResult(int timeoutInSeconds, String... command)
+            throws PrestoManagerException
+    {
         return new CommandExecutor(command, timeoutInSeconds).execute();
     }
 
-    private int execute()
+    private CommandResult execute()
             throws PrestoManagerException
     {
         String commandString = String.join(" ", commandArray);
@@ -60,22 +77,63 @@ public final class CommandExecutor
         processBuilder.redirectErrorStream(true);
         try {
             Process process = processBuilder.start();
-            new Thread(() -> {
-                try (InputStream processStream = process.getInputStream()) {
-                    LOGGER.info("Output from command: %s\n%s", commandString, new String(ByteStreams.toByteArray(processStream)));
-                }
-                catch (IOException e) {
-                    LOGGER.error(e, "Failed to log the process output");
-                }
-            }).start();
-            if (!process.waitFor(timeout, TimeUnit.SECONDS)) {
+            ExecutorService executor = newSingleThreadExecutor();
+            Future<String> outputThread = executor.submit(()->getProcessOutput(process));
+            String output;
+            try {
+               output =  outputThread.get(timeout, SECONDS);
+            }
+            catch (TimeoutException e) {
                 process.destroyForcibly();
                 throw new PrestoManagerException(format("Command timed out: %s", commandString));
             }
-            return process.exitValue();
+            finally {
+                executor.shutdownNow();
+            }
+            LOGGER.info("Output from command: %s\n%s", commandString, output);
+            int exitValue = process.exitValue();
+            return new CommandResult(output, exitValue);
         }
-        catch (IOException | InterruptedException e) {
+        catch (IOException | ExecutionException | InterruptedException e) {
             throw new PrestoManagerException(format("Error executing command: %s", commandString), e);
+        }
+    }
+
+    private String getProcessOutput(Process process)
+    {
+        try (InputStream processStream = process.getInputStream()) {
+            String result = new String(ByteStreams.toByteArray(processStream));
+            process.waitFor();
+            return result;
+        }
+        catch (IOException e) {
+            LOGGER.error(e, "Failed to retrieve the process output");
+        }
+        catch (InterruptedException e) {
+            LOGGER.error(e, "Process failed to complete.");
+        }
+        return null;
+    }
+
+    public final class CommandResult
+    {
+        private final String output;
+        private final int exitValue;
+
+        public CommandResult(String output, int exitValue)
+        {
+            this.output = output;
+            this.exitValue = exitValue;
+        }
+
+        public int getExitValue()
+        {
+            return exitValue;
+        }
+
+        public String getOutput()
+        {
+            return output;
         }
     }
 }
