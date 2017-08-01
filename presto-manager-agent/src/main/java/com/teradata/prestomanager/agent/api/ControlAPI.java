@@ -15,7 +15,7 @@ package com.teradata.prestomanager.agent.api;
 
 import com.google.inject.Inject;
 import com.teradata.prestomanager.agent.PrestoRpmController;
-import com.teradata.prestomanager.agent.StopType;
+import com.teradata.prestomanager.common.StopType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;

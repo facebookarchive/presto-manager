@@ -18,6 +18,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.inject.Inject;
+import com.teradata.prestomanager.common.StopType;
 import io.airlift.log.Logger;
 
 import javax.ws.rs.ProcessingException;

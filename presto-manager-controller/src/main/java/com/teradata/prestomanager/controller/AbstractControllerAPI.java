@@ -34,6 +34,13 @@ public abstract class AbstractControllerAPI
         this.requestDispatcher = requestDispatcher;
     }
 
+    protected void optionalQueryParam(ApiRequester.Builder request, String name, Object value)
+    {
+        if (value != null) {
+            request.queryParam(name, value);
+        }
+    }
+
     protected ApiRequester.Builder requesterBuilder(Class<?> clazz)
     {
         return ApiRequester.builder(forwardingClient, clazz);
