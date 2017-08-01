@@ -13,6 +13,7 @@
  */
 package com.teradata.prestomanager.agent.api;
 
+import com.google.inject.Singleton;
 import com.teradata.prestomanager.agent.APIFileHandler;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -20,7 +21,6 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
-import javax.inject.Singleton;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -34,9 +34,6 @@ import java.nio.file.Paths;
 
 @Path("/connectors")
 @Api(description = "the connectors API")
-@javax.annotation.Generated(
-        value = "io.swagger.codegen.languages.JavaJAXRSSpecServerCodegen",
-        date = "2017-06-23T09:53:13.549-04:00")
 @Singleton
 public final class ConnectorsAPI
 {
@@ -46,7 +43,7 @@ public final class ConnectorsAPI
     @Produces({MediaType.TEXT_PLAIN})
     @ApiOperation(value = "Get avaiable connector file names")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Retrieved configuration", response = String.class)})
+            @ApiResponse(code = 200, message = "Retrieved configuration")})
     public synchronized Response getConnectors()
     {
         return apiFileHandler.getFileNameList();
@@ -55,14 +52,28 @@ public final class ConnectorsAPI
     @GET
     @Path("/{file}")
     @Produces({MediaType.TEXT_PLAIN})
-    @ApiOperation(value = "Get connectors by file")
+    @ApiOperation(value = "Get connector property by file")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Retrieved file", response = String.class),
+            @ApiResponse(code = 200, message = "Retrieved file"),
             @ApiResponse(code = 404, message = "Resource not found")})
     public synchronized Response getConnectorFile(
             @PathParam("file") @ApiParam("The name of a file") String file)
     {
         return apiFileHandler.getFile(file);
+    }
+
+    @GET
+    @Path("/{file}/{property}")
+    @Produces({MediaType.TEXT_PLAIN})
+    @ApiOperation(value = "Get specific connector property")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Retrieved property"),
+            @ApiResponse(code = 404, message = "Resource not found")})
+    public synchronized Response getConnectorProperty(
+            @PathParam("file") @ApiParam("The name of a file") String file,
+            @PathParam("property") @ApiParam("A specific property") String property)
+    {
+        return apiFileHandler.getFileProperty(file, property);
     }
 
     @POST
@@ -89,19 +100,5 @@ public final class ConnectorsAPI
             @PathParam("file") @ApiParam("The name of a file") String file)
     {
         return apiFileHandler.deleteFile(file);
-    }
-
-    @GET
-    @Path("/{file}/{property}")
-    @Produces({MediaType.TEXT_PLAIN})
-    @ApiOperation(value = "Get specific connector property")
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Retrieved property", response = String.class),
-            @ApiResponse(code = 404, message = "Resource not found")})
-    public synchronized Response getConnectorProperty(
-            @PathParam("file") @ApiParam("The name of a file") String file,
-            @PathParam("property") @ApiParam("A specific property") String property)
-    {
-        return apiFileHandler.getFileProperty(file, property);
     }
 }

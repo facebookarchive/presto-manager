@@ -13,6 +13,7 @@
  */
 package com.teradata.prestomanager.agent.api;
 
+import com.google.inject.Singleton;
 import com.teradata.prestomanager.agent.LogsHandler;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -34,9 +35,7 @@ import java.time.Instant;
 
 @Path("/logs")
 @Api(description = "the logs API")
-@javax.annotation.Generated(
-        value = "io.swagger.codegen.languages.JavaJAXRSSpecServerCodegen",
-        date = "2017-06-23T09:53:13.549-04:00")
+@Singleton
 public class LogsAPI
 {
     @GET
@@ -53,7 +52,7 @@ public class LogsAPI
     @Produces({MediaType.TEXT_PLAIN})
     @ApiOperation(value = "Get Presto log file")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Retrieved logs", response = String.class),
+            @ApiResponse(code = 200, message = "Retrieved logs"),
             @ApiResponse(code = 400, message = "Invalid parameters"),
             @ApiResponse(code = 404, message = "Resource not found")})
     public Response getLog(
