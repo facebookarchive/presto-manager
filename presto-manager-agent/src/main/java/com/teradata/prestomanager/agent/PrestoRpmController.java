@@ -160,7 +160,7 @@ public class PrestoRpmController
         try {
             if (!isInstalled()) {
                 LOGGER.info("Presto is not installed");
-                return Response.status(OK).entity(GSON.toJson("Presto is not installed"))
+                return Response.status(OK).entity(GSON.toJson(ImmutableMap.of("installed", false)))
                         .type(APPLICATION_JSON).build();
             }
             prestoVersion = getVersion();
@@ -177,7 +177,12 @@ public class PrestoRpmController
                     .request(APPLICATION_JSON).buildGet().invoke();
             JsonParser jsonParser = new JsonParser();
             JsonObject prestoStatus = jsonParser.parse(prestoInfo.readEntity(String.class)).getAsJsonObject();
+            String version = prestoStatus.getAsJsonObject("nodeVersion").get("version").getAsString();
+            prestoStatus.remove("nodeVersion");
+            prestoStatus.addProperty("version", version);
             prestoStatus.addProperty("state", jsonParser.parse(prestoState.readEntity(String.class)).getAsString());
+            prestoStatus.addProperty("installed", true);
+            prestoStatus.addProperty("running", true);
             return Response.status(OK).entity(prestoStatus.toString()).type(APPLICATION_JSON).build();
         }
         catch (ProcessingException e) {
