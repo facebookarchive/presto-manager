@@ -22,6 +22,7 @@ import com.teradata.prestomanager.agent.api.ConnectorsAPI;
 import com.teradata.prestomanager.agent.api.ControlAPI;
 import com.teradata.prestomanager.agent.api.LogsAPI;
 import com.teradata.prestomanager.agent.api.PackageAPI;
+import com.teradata.prestomanager.common.InstantConverterProvider;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import org.glassfish.jersey.client.JerseyClient;
 import org.glassfish.jersey.client.JerseyClientBuilder;
@@ -47,6 +48,7 @@ public class AgentServerModule
         jaxrsBinder(binder).bind(ControlAPI.class);
         jaxrsBinder(binder).bind(LogsAPI.class);
         jaxrsBinder(binder).bind(PackageAPI.class);
+        jaxrsBinder(binder).bind(InstantConverterProvider.class);
 
         discoveryBinder(binder).bindHttpAnnouncement("presto-manager");
     }

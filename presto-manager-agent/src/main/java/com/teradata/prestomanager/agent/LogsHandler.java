@@ -13,7 +13,6 @@
  */
 package com.teradata.prestomanager.agent;
 
-import com.teradata.prestomanager.common.JaxrsParameter;
 import io.airlift.log.Logger;
 
 import javax.ws.rs.core.Response;
@@ -52,7 +51,7 @@ public final class LogsHandler
     public static final String DEFAULT_LOG_LEVEL = "ALL";
 
     // TODO: Make most of these 'private static final' values configurable
-    private static final Path LOG_DIRECTORY = Paths.get("/var/log/presto");
+    private static final Path LOG_DIRECTORY = Paths.get("var/log/presto");
 
     private static final DateTimeFormatter DATE_FORMAT = new DateTimeFormatterBuilder()
             .parseCaseInsensitive().parseStrict()
@@ -100,18 +99,10 @@ public final class LogsHandler
     /**
      * Method called in response to GET request
      */
-    public static Response getLogs(String filename, JaxrsParameter<Instant> startDate,
-            JaxrsParameter<Instant> endDate, String logLevel, Integer maxEntries)
+    public static Response getLogs(String filename, Instant start,
+            Instant end, String logLevel, Integer maxEntries)
     {
-        requireNonNull(startDate);
-        requireNonNull(endDate);
         requireNonNull(logLevel);
-
-        if (!startDate.isValid() || !endDate.isValid()) {
-            return badRequest("Invalid date format");
-        }
-        Instant start = startDate.get();
-        Instant end = endDate.get();
 
         if (start != null && end != null) {
             if (maxEntries != null) {
@@ -180,13 +171,8 @@ public final class LogsHandler
     /**
      * Method called in response to DELETE request
      */
-    public static Response deleteLogs(String filename, JaxrsParameter<Instant> endDate)
+    public static Response deleteLogs(String filename, Instant end)
     {
-        if (!endDate.isValid()) {
-            return badRequest("Invalid date format");
-        }
-        Instant end = endDate.get();
-
         Path filePath;
         try {
             filePath = LOG_DIRECTORY.resolve(filename);
