@@ -53,6 +53,41 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>com.github.kongchen</groupId>
+                <artifactId>swagger-maven-plugin</artifactId>
+                <version>3.1.5</version>
+                <configuration>
+                    <apiSources>
+                        <apiSource>
+                            <info>
+                                <title>API for Presto Manager Agent</title>
+                                <version>v1</version>
+                                <description>Swagger specification for REST API</description>
+                                <license>
+                                    <name>Apache License 2.0</name>
+                                    <url>https://github.com/prestodb/presto-manager/blob/master/LICENSE</url>
+                                </license>
+                            </info>
+                            <springmvc>false</springmvc>
+                            <basePath>/v1</basePath>
+                            <swaggerDirectory>doc/agent</swaggerDirectory>
+                            <locations>
+                                <location>com.teradata.prestomanager.agent.api</location>
+                            </locations>
+                        </apiSource>
+                    </apiSources>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
