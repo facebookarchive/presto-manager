@@ -169,6 +169,26 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>com.github.kongchen</groupId>
+                    <artifactId>swagger-maven-plugin</artifactId>
+                    <version>3.1.5</version>
+                    <configuration>
+                        <apiSources>
+                            <apiSource>
+                                <info>
+                                    <title>API for Presto Manager</title>
+                                    <version>v1</version>
+                                    <description>Swagger specification for REST API</description>
+                                </info>
+                                <locations>
+                                    <location>.</location>
+                                </locations>
+                            </apiSource>
+                        </apiSources>
+                    </configuration>
+                </plugin>
+
+                <plugin>
                     <groupId>org.skife.maven</groupId>
                     <artifactId>maven-shade-plugin</artifactId>
                     <version>${shade-plugin.version}</version>
