@@ -42,7 +42,7 @@ import static org.eclipse.jetty.http.HttpMethod.DELETE;
 import static org.eclipse.jetty.http.HttpMethod.GET;
 
 @Path("/logs")
-@Api(description = "the controller logs API")
+@Api(description = "API to read and modify log files in the specified scope")
 @Singleton
 public class ControllerLogsAPI
         extends AbstractControllerAPI
@@ -59,8 +59,8 @@ public class ControllerLogsAPI
     @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get a listing of log files")
     @ApiResponses(value = {
-            @ApiResponse(code = 207, message = "Multiple response available"),
-            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response getConnectors(@QueryParam("scope") String scope,
             @QueryParam("nodeId") List<UUID> nodeId)
     {
@@ -77,8 +77,8 @@ public class ControllerLogsAPI
     @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get Presto log file")
     @ApiResponses(value = {
-            @ApiResponse(code = 207, message = "Multiple response available"),
-            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response getLog(
             @PathParam("file") String file,
             @QueryParam("from") Instant fromDate,
@@ -107,8 +107,8 @@ public class ControllerLogsAPI
     @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Delete Presto logs")
     @ApiResponses(value = {
-            @ApiResponse(code = 207, message = "Multiple response available"),
-            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response deleteLog(
             @PathParam("file") String file,
             @QueryParam("to") Instant toDate,

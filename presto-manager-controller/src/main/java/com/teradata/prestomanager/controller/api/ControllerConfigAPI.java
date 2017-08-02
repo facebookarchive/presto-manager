@@ -45,7 +45,7 @@ import static org.eclipse.jetty.http.HttpMethod.POST;
 import static org.eclipse.jetty.http.HttpMethod.PUT;
 
 @Path("/config")
-@Api(description = "the controller config API")
+@Api(description = "API to read and write to Presto configuration files in the specified scope")
 @Singleton
 public class ControllerConfigAPI
         extends AbstractControllerAPI
@@ -60,10 +60,10 @@ public class ControllerConfigAPI
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    @ApiOperation(value = "Get available configuration files")
+    @ApiOperation(value = "Get list of all available configuration files")
     @ApiResponses(value = {
-            @ApiResponse(code = 207, message = "Multiple response available"),
-            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response getConfig(@QueryParam("scope") String scope,
             @QueryParam("nodeId") List<UUID> nodeId)
     {
@@ -78,10 +78,10 @@ public class ControllerConfigAPI
     @GET
     @Path("/{file}")
     @Produces(MediaType.TEXT_PLAIN)
-    @ApiOperation(value = "Get configuration by file")
+    @ApiOperation(value = "Get contents of a configuration file")
     @ApiResponses(value = {
-            @ApiResponse(code = 207, message = "Multiple response available"),
-            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response getConfigFile(
             @PathParam("file") String file,
             @QueryParam("scope") String scope,
@@ -102,8 +102,8 @@ public class ControllerConfigAPI
     @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get specific configuration property")
     @ApiResponses(value = {
-            @ApiResponse(code = 207, message = "Multiple response available"),
-            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response getConfigProperty(
             @PathParam("file") String file,
             @PathParam("property") String property,
@@ -126,8 +126,8 @@ public class ControllerConfigAPI
     @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Update or create a certain property of configuration file")
     @ApiResponses(value = {
-            @ApiResponse(code = 207, message = "Multiple response available"),
-            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response updateConfigProperty(
             @PathParam("file") String file,
             @PathParam("property") String property,
@@ -152,8 +152,8 @@ public class ControllerConfigAPI
     @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Replace this file with the file at the given URL")
     @ApiResponses(value = {
-            @ApiResponse(code = 207, message = "Multiple response available"),
-            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response setConfigFileByURL(
             String url,
             @PathParam("file") String file,
@@ -176,8 +176,8 @@ public class ControllerConfigAPI
     @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Delete a configuration file")
     @ApiResponses(value = {
-            @ApiResponse(code = 207, message = "Multiple response available"),
-            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response deleteConfigFile(
             @PathParam("file") String file,
             @QueryParam("scope") String scope,

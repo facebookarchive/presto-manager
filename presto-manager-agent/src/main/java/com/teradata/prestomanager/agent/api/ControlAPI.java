@@ -35,7 +35,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 
 @Path("/presto")
-@Api(description = "API to start, stop, restart presto and get presto status")
+@Api(description = "API to start, stop, restart Presto and get Presto status")
 @Singleton
 public class ControlAPI
 {
@@ -50,7 +50,7 @@ public class ControlAPI
     @POST
     @Path("/start")
     @Produces(TEXT_PLAIN)
-    @ApiOperation(value = "Start presto")
+    @ApiOperation(value = "Start Presto")
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request"),
             @ApiResponse(code = 404, message = "Presto is not installed")})
@@ -61,9 +61,9 @@ public class ControlAPI
 
     @POST
     @Path("/stop")
-    @ApiOperation(value = "Stop presto")
+    @ApiOperation(value = "Stop Presto")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully stopped presto"),
+            @ApiResponse(code = 200, message = "Successfully stopped Presto"),
             @ApiResponse(code = 404, message = "Presto is not installed"),
             @ApiResponse(code = 409, message = "Coordinator can't be gracefully stopped")})
     public synchronized Response stopPresto(@QueryParam("stopType") @ApiParam("StopType: TERMINATE, KILL or GRACEFUL")
@@ -74,9 +74,9 @@ public class ControlAPI
 
     @POST
     @Path("/restart")
-    @ApiOperation(value = "Restart presto")
+    @ApiOperation(value = "Restart Presto")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully restarted presto"),
+            @ApiResponse(code = 200, message = "Successfully restarted Presto"),
             @ApiResponse(code = 404, message = "Presto is not installed")})
     public synchronized Response restartPresto()
     {
@@ -86,9 +86,9 @@ public class ControlAPI
     @GET
     @Path("/status")
     @Produces(APPLICATION_JSON)
-    @ApiOperation(value = "Get presto status")
+    @ApiOperation(value = "Get Presto status")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved presto status")})
+            @ApiResponse(code = 200, message = "Successfully retrieved Presto status")})
     public synchronized Response prestoStatus()
     {
         return controller.statusUsingRpm();

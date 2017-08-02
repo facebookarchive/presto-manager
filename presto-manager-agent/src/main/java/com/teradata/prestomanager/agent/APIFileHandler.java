@@ -104,7 +104,7 @@ public class APIFileHandler
             AgentFileUtils.updateProperty(Paths.get(baseDir.toString(), path), property, value);
             LOGGER.debug("Updating property '%s' of file '%s' to '%s'", property, path, value);
             return Response.status(Status.OK)
-                    .entity("Successfully updates the property of file").build();
+                    .entity("Successfully updated the property of file").build();
         }
         catch (FileNotFoundException e) {
             LOGGER.error(e, "File '%s' not found", path);
