@@ -51,7 +51,20 @@ For example, this request will receive a list of available configuration files a
 GET http://localhost:8080/v1/config?scope=cluster
 ```
 
-Please refer to the swagger API documentation for more information.
+#####For more information, please generate the swagger API documentation.
+#####Follow the below steps to generate the documentation.
+First run
+```
+mvn clean install swagger:generate
+```
+Then run
+```
+mvn clean install swagger2markup:convertSwagger2markup
+```
+The agent documentation will be located at  
+**[project-root](https://github.com/prestodb/presto-manager)/doc/agent/asciidoc/paths.adoc**  
+and the controller documentation at  
+**[project-root](https://github.com/prestodb/presto-manager)/doc/controller/asciidoc/paths.adoc**  
 
 ## License
 
