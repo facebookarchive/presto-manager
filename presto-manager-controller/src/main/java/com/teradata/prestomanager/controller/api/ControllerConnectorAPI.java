@@ -18,6 +18,7 @@ import com.google.inject.Singleton;
 import com.teradata.prestomanager.common.ApiRequester;
 import com.teradata.prestomanager.controller.AbstractControllerAPI;
 import com.teradata.prestomanager.controller.RequestDispatcher;
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -44,6 +45,7 @@ import static org.eclipse.jetty.http.HttpMethod.POST;
 import static org.eclipse.jetty.http.HttpMethod.PUT;
 
 @Path("/connectors")
+@Api(description = "API to read and write to Presto connector files in the specified scope")
 @Singleton
 public class ControllerConnectorAPI
         extends AbstractControllerAPI
@@ -60,8 +62,8 @@ public class ControllerConnectorAPI
     @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get avaiable connector file names")
     @ApiResponses(value = {
-            @ApiResponse(code = 207, message = "Multiple response available"),
-            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response getConnectors(@QueryParam("scope") String scope,
             @QueryParam("nodeId") List<UUID> nodeId)
     {
@@ -76,10 +78,10 @@ public class ControllerConnectorAPI
     @GET
     @Path("/{file}")
     @Produces(MediaType.TEXT_PLAIN)
-    @ApiOperation(value = "Get connector property by file")
+    @ApiOperation(value = "Get contents of a connector file")
     @ApiResponses(value = {
-            @ApiResponse(code = 207, message = "Multiple response available"),
-            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response getConnectorFile(
             @PathParam("file") String file,
             @QueryParam("scope") String scope,
@@ -100,8 +102,8 @@ public class ControllerConnectorAPI
     @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Get connector property by file")
     @ApiResponses(value = {
-            @ApiResponse(code = 207, message = "Multiple response available"),
-            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response getConnectorProperty(
             @PathParam("file") String file,
             @PathParam("property") String property,
@@ -124,8 +126,8 @@ public class ControllerConnectorAPI
     @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Update or create a certain property of connector file")
     @ApiResponses(value = {
-            @ApiResponse(code = 207, message = "Multiple response available"),
-            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response updateConnectorProperty(
             @PathParam("file") String file,
             @PathParam("property") String property,
@@ -150,8 +152,8 @@ public class ControllerConnectorAPI
     @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Replace this file with the file at the given URL")
     @ApiResponses(value = {
-            @ApiResponse(code = 207, message = "Multiple response available"),
-            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response setConnectorFileByURL(
             String url,
             @PathParam("file") String file,
@@ -174,8 +176,8 @@ public class ControllerConnectorAPI
     @Produces(MediaType.TEXT_PLAIN)
     @ApiOperation(value = "Delete a connector file")
     @ApiResponses(value = {
-            @ApiResponse(code = 207, message = "Multiple response available"),
-            @ApiResponse(code = 400, message = "Request contain invalid parameters")})
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response deleteConnectorFile(
             @PathParam("file") String file,
             @QueryParam("scope") String scope,

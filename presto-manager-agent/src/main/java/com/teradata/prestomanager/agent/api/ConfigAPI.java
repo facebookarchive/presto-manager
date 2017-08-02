@@ -35,7 +35,7 @@ import javax.ws.rs.core.Response;
 import java.nio.file.Paths;
 
 @Path("/config")
-@Api(description = "the config API")
+@Api(description = "API to read and write to Presto configuration files")
 @Singleton
 public final class ConfigAPI
 {
@@ -54,7 +54,7 @@ public final class ConfigAPI
     @GET
     @Path("/{file}")
     @Produces(MediaType.TEXT_PLAIN)
-    @ApiOperation(value = "Get configuration by file")
+    @ApiOperation(value = "Get the content of a configuration file")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved file"),
             @ApiResponse(code = 404, message = "Resource not found")})

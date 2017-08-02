@@ -34,7 +34,7 @@ import javax.ws.rs.core.Response;
 import java.time.Instant;
 
 @Path("/logs")
-@Api(description = "the logs API")
+@Api(description = "API to read and modify log files")
 @Singleton
 public class LogsAPI
 {

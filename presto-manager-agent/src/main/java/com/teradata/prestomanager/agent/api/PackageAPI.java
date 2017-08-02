@@ -50,7 +50,7 @@ import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 @Path("/package")
-@Api(description = "the package API")
+@Api(description = "API to install, uninstall, upgrade Presto")
 @Singleton
 // TODO: Add configuration to get package type from PM config file
 public final class PackageAPI
@@ -60,7 +60,7 @@ public final class PackageAPI
     @PUT
     @Consumes(TEXT_PLAIN)
     @Produces(TEXT_PLAIN)
-    @ApiOperation(value = "Install presto using rpm or tarball")
+    @ApiOperation(value = "Install Presto using rpm or tarball")
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request"),
             @ApiResponse(code = 400, message = "Invalid url"),
@@ -96,7 +96,7 @@ public final class PackageAPI
     @POST
     @Consumes(TEXT_PLAIN)
     @Produces(TEXT_PLAIN)
-    @ApiOperation(value = "Upgrade presto")
+    @ApiOperation(value = "Upgrade Presto")
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request"),
             @ApiResponse(code = 400, message = "Invalid url"),
@@ -137,7 +137,7 @@ public final class PackageAPI
 
     @DELETE
     @Produces({TEXT_PLAIN})
-    @ApiOperation(value = "Uninstall presto")
+    @ApiOperation(value = "Uninstall Presto")
     @ApiResponses(value = {
             @ApiResponse(code = 202, message = "Acknowledged request")
     })

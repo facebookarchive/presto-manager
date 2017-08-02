@@ -34,7 +34,7 @@ import javax.ws.rs.core.Response;
 import java.nio.file.Paths;
 
 @Path("/connectors")
-@Api(description = "the connectors API")
+@Api(description = "API to read and write to Presto connector files")
 @Singleton
 public final class ConnectorsAPI
 {
@@ -53,7 +53,7 @@ public final class ConnectorsAPI
     @GET
     @Path("/{file}")
     @Produces(MediaType.TEXT_PLAIN)
-    @ApiOperation(value = "Get connector property by file")
+    @ApiOperation(value = "Get contents of a connector file")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved file"),
             @ApiResponse(code = 404, message = "Resource not found")})
