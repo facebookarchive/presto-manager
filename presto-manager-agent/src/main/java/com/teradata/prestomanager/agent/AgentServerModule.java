@@ -13,10 +13,13 @@
  */
 package com.teradata.prestomanager.agent;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.teradata.prestomanager.agent.announcement.DynamicAnnouncementProperties;
+import com.teradata.prestomanager.agent.announcement.DynamicProperty;
 import com.teradata.prestomanager.agent.api.ConfigAPI;
 import com.teradata.prestomanager.agent.api.ConnectorsAPI;
 import com.teradata.prestomanager.agent.api.ControlAPI;
@@ -29,6 +32,9 @@ import org.glassfish.jersey.client.JerseyClientBuilder;
 
 import javax.ws.rs.client.Client;
 
+import java.util.Set;
+
+import static com.teradata.prestomanager.agent.announcement.DynamicProperty.dynamicProperty;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
@@ -75,5 +81,15 @@ public class AgentServerModule
     JerseyClient jerseyClientProvider()
     {
         return JerseyClientBuilder.createClient();
+    }
+
+    @Provides
+    @DynamicAnnouncementProperties
+    Set<DynamicProperty> getDynamicProperties()
+    {
+        // TODO: Add useful values here
+        return ImmutableSet.<DynamicProperty>builder()
+                .add(dynamicProperty("presto-manager", "dynamicProperty", () -> "dummy value"))
+                .build();
     }
 }

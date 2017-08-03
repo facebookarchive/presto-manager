@@ -14,6 +14,7 @@
 package com.teradata.prestomanager.agent;
 
 import com.google.inject.Injector;
+import com.teradata.prestomanager.agent.announcement.DynamicAnnouncementModule;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.discovery.client.Announcer;
 import io.airlift.discovery.client.DiscoveryModule;
@@ -44,6 +45,7 @@ class AgentServer
                 new JsonModule(),
                 new JaxrsModule(true), // requireExplicitBindings = true
                 new HttpEventModule(),
+                new DynamicAnnouncementModule(),
                 new AgentServerModule()
         );
 
