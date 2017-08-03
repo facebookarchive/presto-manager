@@ -13,8 +13,6 @@
  */
 package com.teradata.prestomanager.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.inject.Binder;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -61,16 +59,5 @@ public class ControllerServerModule
     public JerseyClient jerseyClientProvider()
     {
         return JerseyClientBuilder.createClient();
-    }
-
-    @Provides
-    @Singleton
-    @ForController
-    public ObjectMapper objectMapper()
-    {
-        // TODO: Don't enable the pretty printer ("INDENT_OUTPUT")
-        return new ObjectMapper()
-                .enable(SerializationFeature.INDENT_OUTPUT)
-                .enable(SerializationFeature.CLOSE_CLOSEABLE);
     }
 }

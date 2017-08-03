@@ -13,8 +13,6 @@
  */
 package com.teradata.prestomanager.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.teradata.prestomanager.common.ApiRequester;
 import io.airlift.log.Logger;
@@ -40,14 +38,11 @@ public class RequestDispatcher
     private static final Logger LOGGER = Logger.get(RequestDispatcher.class);
 
     private AgentMap agentMap;
-    private ObjectMapper objectMapper;
 
     @Inject
-    public RequestDispatcher(AgentMap agentMap,
-            @ForController ObjectMapper objectMapper)
+    public RequestDispatcher(AgentMap agentMap)
     {
         this.agentMap = agentMap;
-        this.objectMapper = objectMapper;
     }
 
     public Response forwardRequest(
@@ -94,15 +89,9 @@ public class RequestDispatcher
                         ResponseWrapper.wrapResponse(apiRequester.send(e.getValue()))))
                 .collect(toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        try {
-            return Response.status(MULTI_STATUS)
-                    .type(MediaType.APPLICATION_JSON)
-                    .entity(objectMapper.writeValueAsString(responses))
-                    .build();
-        }
-        catch (JsonProcessingException e) {
-            return Response.status(INTERNAL_SERVER_ERROR)
-                    .entity("Error converting Agent responses to JSON").build();
-        }
+        return Response.status(MULTI_STATUS)
+                .type(MediaType.APPLICATION_JSON)
+                .entity(responses)
+                .build();
     }
 }
