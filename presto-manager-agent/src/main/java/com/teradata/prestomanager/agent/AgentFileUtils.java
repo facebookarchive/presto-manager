@@ -16,7 +16,6 @@ package com.teradata.prestomanager.agent;
 import com.google.common.collect.ImmutableList;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -24,8 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -36,6 +33,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static java.nio.file.Files.copy;
+import static java.nio.file.Files.createTempFile;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.stream.Collectors.collectingAndThen;
 
@@ -67,19 +66,17 @@ public final class AgentFileUtils
         return stringJoiner.toString();
     }
 
+    // TODO: Change URL to URI
     public static void replaceFile(Path path, String url)
             throws IOException
     {
         URL website = new URL(url);
-        File tempFile = File.createTempFile("PrestoMgrTemp", ".tmp");
-        try (ReadableByteChannel readableByteChannel = Channels.newChannel(website.openStream());
-                FileOutputStream fileOutputStream = new FileOutputStream(tempFile)) {
-            fileOutputStream.getChannel().transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
-            Path newCopy = tempFile.toPath();
+        Path newCopy = downloadFile(website);
+        try {
             Files.copy(newCopy, path, REPLACE_EXISTING);
         }
         finally {
-            tempFile.delete();
+            newCopy.toFile().delete();
         }
     }
 
@@ -129,5 +126,15 @@ public final class AgentFileUtils
         try (OutputStream outputStream = new FileOutputStream(path.toString())) {
             properties.store(outputStream, null);
         }
+    }
+
+    public static Path downloadFile(URL url)
+            throws IOException
+    {
+        Path tempFile = createTempFile("PrestoMgrTemp", ".tmp");
+        try (InputStream inputStream = url.openStream()) {
+            copy(inputStream, tempFile, REPLACE_EXISTING);
+        }
+        return tempFile;
     }
 }

@@ -41,7 +41,6 @@ public class AgentServerModule
         binder.disableCircularProxies();
 
         binder.bind(Client.class).to(JerseyClient.class).in(Scopes.SINGLETON);
-        binder.bind(PrestoRpmController.class);
 
         jaxrsBinder(binder).bind(ConfigAPI.class);
         jaxrsBinder(binder).bind(ConnectorsAPI.class);

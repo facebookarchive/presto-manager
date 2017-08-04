@@ -13,8 +13,9 @@
  */
 package com.teradata.prestomanager.agent;
 
-public interface PrestoCommand
+@FunctionalInterface
+interface PrestoRunnable
 {
-    void runCommand()
+    void run()
             throws PrestoManagerException;
 }

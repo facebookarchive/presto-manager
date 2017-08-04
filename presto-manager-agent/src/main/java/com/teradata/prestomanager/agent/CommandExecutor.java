@@ -85,7 +85,7 @@ public final class CommandExecutor
             }
             catch (TimeoutException e) {
                 process.destroyForcibly();
-                throw new PrestoManagerException(format("Command timed out: %s", commandString));
+                throw new PrestoManagerException(format("Command timed out: %s", commandString), e);
             }
             finally {
                 executor.shutdownNow();
