@@ -34,7 +34,11 @@ import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.nio.file.Files.copy;
+import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.createTempFile;
+import static java.nio.file.Files.isDirectory;
+import static java.nio.file.Files.isRegularFile;
+import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.stream.Collectors.collectingAndThen;
 
@@ -136,5 +140,27 @@ public final class AgentFileUtils
             copy(inputStream, tempFile, REPLACE_EXISTING);
         }
         return tempFile;
+    }
+
+    /**
+     * Copies all the regular files within a directory to a new location
+     * <p>
+     * The destination directory is created if it does not exist
+     *
+     * @param src Source directory
+     * @param dest Destination directory
+     */
+    public static void copyDir(Path src, Path dest)
+            throws IOException
+
+    {
+        List<Path> filePaths = Files.list(src).filter(path -> isRegularFile(path, NOFOLLOW_LINKS))
+                .collect(ImmutableList.toImmutableList());
+        if (!isDirectory(dest)) {
+            createDirectories(dest);
+        }
+        for (Path path : filePaths) {
+            copy(path, dest.resolve(path.getFileName()), REPLACE_EXISTING);
+        }
     }
 }
