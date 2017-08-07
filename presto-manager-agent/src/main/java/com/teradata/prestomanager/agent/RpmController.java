@@ -23,7 +23,8 @@ import java.nio.file.Path;
 import static com.teradata.prestomanager.agent.AgentFileUtils.downloadFile;
 import static com.teradata.prestomanager.agent.CommandExecutor.execCommandResult;
 import static com.teradata.prestomanager.agent.CommandExecutor.executeCommand;
-import static com.teradata.prestomanager.agent.PrestoConfigUtils.addTpchCatalog;
+import static com.teradata.prestomanager.agent.PrestoConfigUtils.addConfigFiles;
+import static com.teradata.prestomanager.agent.PrestoConfigUtils.addConnectors;
 import static com.teradata.prestomanager.agent.PrestoConfigUtils.deployConfigFiles;
 import static com.teradata.prestomanager.agent.PrestoConfigUtils.storeConfigFiles;
 import static java.lang.String.format;
@@ -48,7 +49,8 @@ public class RpmController
             if (installRpm != 0) {
                 throw new PrestoManagerException("Failed to install Presto", installRpm);
             }
-            addTpchCatalog(CATALOG_DIR);
+            addConfigFiles(CONFIG_DIR);
+            addConnectors(CATALOG_DIR);
             LOGGER.debug("Successfully installed Presto");
         }
         finally {
@@ -110,6 +112,8 @@ public class RpmController
             }
             else {
                 upgradePackage(tempPackage.toString(), checkDependencies);
+                addConfigFiles(CONFIG_DIR);
+                addConnectors(CATALOG_DIR);
             }
         }
         finally {
