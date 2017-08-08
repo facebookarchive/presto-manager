@@ -19,9 +19,9 @@ import io.airlift.log.Logger;
 
 import javax.ws.rs.client.Client;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static com.teradata.prestomanager.agent.AgentFileUtils.downloadFile;
@@ -61,7 +61,7 @@ public class RpmController
     public void installAsync(URL packageUrl, boolean checkDependencies)
             throws PrestoManagerException
     {
-        File tempFile = getRpmPackage(packageUrl);
+        Path tempFile = getRpmPackage(packageUrl);
         try {
             int installRpm;
             if (checkDependencies) {
@@ -75,18 +75,16 @@ public class RpmController
             if (installRpm != 0) {
                 throw new PrestoManagerException("Failed to install Presto", installRpm);
             }
-            configUtils.addConfigFiles(configDir, dataDir, pluginDir);
-            configUtils.addConnectors(catalogDir);
+            configUtils.deployDefaultConfig(configDir, dataDir, pluginDir);
+            configUtils.deployDefaultConnectors(catalogDir);
             LOGGER.debug("Successfully installed Presto");
         }
         finally {
-            if (!tempFile.delete()) {
-                LOGGER.warn("Failed to delete the temporary file: %s", tempFile.toString());
-            }
+            deleteTempFile(tempFile);
         }
     }
 
-    private File getRpmPackage(URL packageUrl)
+    private Path getRpmPackage(URL packageUrl)
             throws PrestoManagerException
     {
         Path tempFile;
@@ -101,7 +99,7 @@ public class RpmController
         if (checkRpm != 0) {
             throw new PrestoManagerException("Corrupted RPM", checkRpm);
         }
-        return tempFile.toFile();
+        return tempFile;
     }
 
     public void uninstallAsync(boolean checkDependencies)
@@ -125,30 +123,26 @@ public class RpmController
     public void upgradeAsync(URL packageUrl, boolean checkDependencies, boolean preserveConfig)
             throws PrestoManagerException
     {
-        File tempPackage = getRpmPackage(packageUrl);
+        Path tempPackage = getRpmPackage(packageUrl);
         try {
             if (preserveConfig) {
-                File tempConfig = configUtils.storeConfigFiles(configDir);
+                Path tempConfig = configUtils.backupDirectory(configDir);
                 try {
                     upgradePackage(tempPackage.toString(), checkDependencies);
-                    configUtils.deployConfigFiles(tempConfig, configDir);
+                    configUtils.restoreDirectory(tempConfig, configDir);
                 }
                 finally {
-                    if (!tempConfig.delete()) {
-                        LOGGER.warn("Failed to delete the temporary file: %s", tempConfig.toString());
-                    }
+                    deleteTempFile(tempConfig);
                 }
             }
             else {
                 upgradePackage(tempPackage.toString(), checkDependencies);
-                configUtils.addConfigFiles(configDir, dataDir, pluginDir);
-                configUtils.addConnectors(catalogDir);
+                configUtils.deployDefaultConfig(configDir, dataDir, pluginDir);
+                configUtils.deployDefaultConnectors(catalogDir);
             }
         }
         finally {
-            if (!tempPackage.delete()) {
-                LOGGER.warn("Failed to delete the temporary file: %s", tempPackage.toString());
-            }
+            deleteTempFile(tempPackage);
         }
         LOGGER.debug("Successfully upgraded presto");
     }
@@ -226,5 +220,15 @@ public class RpmController
             throws PrestoManagerException
     {
         return isInstalled() && executor.runCommand("service", "presto", "status") == 0;
+    }
+
+    private static void deleteTempFile(Path file)
+    {
+        try {
+            Files.delete(file);
+        }
+        catch (IOException e) {
+            LOGGER.warn(e, "Failed to delete the temporary file: %s", file.toString());
+        }
     }
 }

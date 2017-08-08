@@ -19,6 +19,8 @@ import javax.ws.rs.core.Response;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
@@ -81,10 +83,15 @@ public class APIFileHandler
     public Response replaceFileFromURL(String path, String url)
     {
         try {
-            AgentFileUtils.replaceFile(Paths.get(baseDir.toString(), path), url);
-            LOGGER.debug("Replacing file '%s' with url '%s' in progress", path, url);
+            AgentFileUtils.replaceFile(Paths.get(baseDir.toString(), path), new URL(url));
+            LOGGER.debug("Replaced file '%s' with file at url '%s'", path, url);
             return Response.status(Status.ACCEPTED)
-                    .entity("Replacing file with url in progress").build();
+                    .entity("File replaced").build();
+        }
+        catch (MalformedURLException | IllegalArgumentException e) {
+            LOGGER.error(e, "Invalid URL: %s", url);
+            return Response.status(Status.BAD_REQUEST)
+                    .entity("Invalid URL").build();
         }
         catch (FileNotFoundException e) {
             LOGGER.error(e, "File '%s' not found", path);
@@ -102,7 +109,7 @@ public class APIFileHandler
     {
         try {
             AgentFileUtils.updateProperty(Paths.get(baseDir.toString(), path), property, value);
-            LOGGER.debug("Updating property '%s' of file '%s' to '%s'", property, path, value);
+            LOGGER.debug("Updated property '%s' in file '%s' to '%s'", property, path, value);
             return Response.status(Status.OK)
                     .entity("Successfully updated the property of file").build();
         }
@@ -122,7 +129,7 @@ public class APIFileHandler
     {
         try {
             AgentFileUtils.deleteFile(Paths.get(baseDir.toString(), path));
-            LOGGER.debug("Deleting file '%s' in progress", path);
+            LOGGER.debug("File deleted", path);
             return Response.status(Status.ACCEPTED)
                     .entity("Deleting file in progress").build();
         }
@@ -161,9 +168,9 @@ public class APIFileHandler
     {
         try {
             AgentFileUtils.removePropertyFromFile(Paths.get(baseDir.toString(), path), property);
-            LOGGER.debug("Deleting property '%s' from file '%s' in progress", property, path);
+            LOGGER.debug("Deleted property '%s' from file '%s'", property, path);
             return Response.status(Status.ACCEPTED)
-                    .entity("Deleting file property in progress").build();
+                    .entity("Deleted property").build();
         }
         catch (NoSuchElementException | FileNotFoundException e) {
             LOGGER.error(e, "File '%s' not found", path);
