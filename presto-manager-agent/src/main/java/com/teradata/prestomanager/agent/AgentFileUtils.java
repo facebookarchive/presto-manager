@@ -70,17 +70,15 @@ public final class AgentFileUtils
         return stringJoiner.toString();
     }
 
-    // TODO: Change URL to URI
-    public static void replaceFile(Path path, String url)
+    public static void replaceFile(Path path, URL url)
             throws IOException
     {
-        URL website = new URL(url);
-        Path newCopy = downloadFile(website);
+        Path newCopy = downloadFile(url);
         try {
             Files.copy(newCopy, path, REPLACE_EXISTING);
         }
         finally {
-            newCopy.toFile().delete();
+            Files.delete(newCopy);
         }
     }
 

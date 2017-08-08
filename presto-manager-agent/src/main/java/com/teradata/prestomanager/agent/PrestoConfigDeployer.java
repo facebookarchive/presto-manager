@@ -15,7 +15,6 @@ package com.teradata.prestomanager.agent;
 
 import com.google.inject.Inject;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
@@ -24,9 +23,9 @@ import java.util.Properties;
 import static com.google.common.io.MoreFiles.deleteDirectoryContents;
 import static com.teradata.prestomanager.agent.AgentFileUtils.copyDir;
 import static com.teradata.prestomanager.agent.AgentFileUtils.updateProperty;
-import static java.io.File.createTempFile;
 import static java.lang.String.format;
 import static java.nio.file.Files.createDirectories;
+import static java.nio.file.Files.createTempFile;
 import static java.nio.file.Files.isDirectory;
 import static java.nio.file.Files.newOutputStream;
 import static java.nio.file.Files.write;
@@ -49,10 +48,20 @@ public class PrestoConfigDeployer
         this.executor = requireNonNull(executor);
     }
 
-    public File storeConfigFiles(Path configDir)
+    /**
+     * Backup the given directory in a temporary file.
+     * <p>
+     * The only guarantee about the returned {@link Path} is that it may be
+     * restored with {@link #restoreDirectory(Path, Path)}.
+     * <p>
+     * The backup file may be created in the system's temporary file directory.
+     *
+     * @return The location of the backup file.
+     */
+    public Path backupDirectory(Path directory)
             throws PrestoManagerException
     {
-        File tempFile;
+        Path tempFile;
         try {
             tempFile = createTempFile("PrestoConfigs", ".tar.gz");
         }
@@ -60,48 +69,85 @@ public class PrestoConfigDeployer
             throw new PrestoManagerException("Failed to create temp file.", e);
         }
         int tarResult = executor
-                .runCommand("tar", "-czvf", tempFile.getAbsolutePath(),
-                        "-C", configDir.toString(), ".");
+                .runCommand("tar", "-czvf", tempFile.toAbsolutePath().toString(),
+                        "-C", directory.toString(), ".");
         if (tarResult != 0) {
             throw new PrestoManagerException("Failed to tar config files.", tarResult);
         }
         return tempFile;
     }
 
-    public void deployConfigFiles(File configTar, Path configDir)
+    /**
+     * Restore the contents of the given directory from the given backup file.
+     * <p>
+     * The backup file should have been created by {@link #backupDirectory(Path)}.
+     */
+    public void restoreDirectory(Path backup, Path directory)
             throws PrestoManagerException
     {
         try {
-            deleteDirectoryContents(configDir);
+            deleteDirectoryContents(directory);
         }
         catch (IOException e) {
-            throw new PrestoManagerException(format("Failed to delete contents of the directory: %s", configDir.toString()), e);
+            throw new PrestoManagerException(format("Failed to delete contents of the directory: %s", directory.toString()), e);
         }
         int untarResult = executor
-                .runCommand("tar", "-xzvf", configTar.getAbsolutePath(),
-                        "-C", configDir.toString());
+                .runCommand("tar", "-xzvf", backup.toAbsolutePath().toString(),
+                        "-C", directory.toString());
         if (untarResult != 0) {
             throw new PrestoManagerException("Failed to deploy config files", untarResult);
         }
     }
 
-    public void addConfigFiles(Path configDir, Path dataDir, Path pluginDir)
+    /**
+     * Add default Presto configuration in the given directories
+     * <p>
+     * If {@link #defaultConfig} exists, its contents will be used for
+     * the configuration directory. Otherwise, non-configurable default
+     * configuration files will be created.
+     */
+    public void deployDefaultConfig(Path configDir, Path dataDir, Path pluginDir)
             throws PrestoManagerException
     {
         try {
             if (isDirectory(defaultConfig)) {
                 copyDir(defaultConfig, configDir);
-                updateProperty(configDir.resolve("node.properties"), "node.id", randomUUID().toString());
+                // TODO: Include node.id in install requests
+                updateProperty(configDir.resolve("node.properties"),
+                        "node.id", randomUUID().toString());
             }
             else {
                 deleteDirectoryContents(configDir);
-                addConfigProperties(configDir);
-                addNodeProperties(configDir, pluginDir, dataDir);
+                createConfigPropertiess(configDir);
+                createNodeProperties(configDir, pluginDir, dataDir);
                 addJvmConfig(configDir);
             }
         }
         catch (IOException e) {
             throw new PrestoManagerException("Failed to add config files", e);
+        }
+    }
+
+    /**
+     * Add default Presto connector configuration in the given directory
+     * <p>
+     * If {@link #defaultCatalog} exists, its contents will be used for
+     * the configuration directory. Otherwise, non-configurable default
+     * connector files will be created.
+     */
+    public void deployDefaultConnectors(Path catalogDir)
+            throws PrestoManagerException
+    {
+        try {
+            if (isDirectory(defaultCatalog)) {
+                copyDir(defaultCatalog, catalogDir);
+            }
+            else {
+                crateTpchCatalog(catalogDir);
+            }
+        }
+        catch (IOException e) {
+            throw new PrestoManagerException("Failed to add connectors", e);
         }
     }
 
@@ -116,23 +162,9 @@ public class PrestoConfigDeployer
         }
     }
 
-    public void addConnectors(Path catalogDir)
-            throws PrestoManagerException
-    {
-        try {
-            if (isDirectory(defaultCatalog)) {
-                copyDir(defaultCatalog, catalogDir);
-            }
-            else {
-                addTpchCatalog(catalogDir);
-            }
-        }
-        catch (IOException e) {
-            throw new PrestoManagerException("Failed to add connectors", e);
-        }
-    }
+    /* The following functions all create configuration files */
 
-    private static void addTpchCatalog(Path catalogDir)
+    private static void crateTpchCatalog(Path catalogDir)
             throws IOException
     {
         if (!isDirectory(catalogDir)) {
@@ -141,7 +173,7 @@ public class PrestoConfigDeployer
         }
     }
 
-    private static void addConfigProperties(Path configDir)
+    private static void createConfigPropertiess(Path configDir)
             throws PrestoManagerException
     {
         // TODO: Add discovery.uri
@@ -153,7 +185,7 @@ public class PrestoConfigDeployer
         createPropertiesFile(properties, configDir.resolve("config.properties"), "single node worker config");
     }
 
-    private static void addNodeProperties(Path configDir, Path dataDir, Path pluginDir)
+    private static void createNodeProperties(Path configDir, Path dataDir, Path pluginDir)
             throws PrestoManagerException
     {
         // TODO: Add node.server-log-file & node.launcher-log-file
