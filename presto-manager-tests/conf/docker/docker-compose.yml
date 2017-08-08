@@ -1,0 +1,48 @@
+version: '2'
+
+services:
+    centos-base:
+        image: 'teradatalabs/centos6-ssh-oj8'
+
+    controller:
+        extends:
+            service: centos-base
+        hostname: controller
+        volumes:
+            - ../presto-manager:/presto-manager/etc
+            - ../../../presto-manager-tests/target/Test.jar:/presto-manager/Test.jar
+            - ../../../presto-manager-controller/target/ControllerServer.jar:/presto-manager/ControllerServer.jar
+        ports:
+            - "8088:8088"
+        depends_on:
+            - coordinator
+            - worker
+        working_dir: "/presto-manager"
+        command: java -jar ControllerServer.jar
+
+
+    coordinator:
+        extends:
+            service: centos-base
+        hostname: coordinator
+        volumes:
+            - ../presto-manager:/presto-manager/etc
+            - ../../../presto-manager-agent/target/AgentServer.jar:/presto-manager/AgentServer.jar
+            - ../presto/etc/coordinator-config:/presto-manager/defaults/config
+            - ../presto/etc/catalog:/presto-manager/defaults/catalog
+        ports:
+            - "8080:8080"
+        working_dir : "/presto-manager"
+        command: java -jar AgentServer.jar
+
+    worker:
+        extends:
+            service: centos-base
+        hostname: worker
+        volumes:
+            - ../presto-manager:/presto-manager/etc
+            - ../../../presto-manager-agent/target/AgentServer.jar:/presto-manager/AgentServer.jar
+            - ../presto/etc/worker-config:/presto-manager/defaults/config
+            - ../presto/etc/catalog:/presto-manager/defaults/catalog
+        working_dir : "/presto-manager"
+        command: java -jar AgentServer.jar
