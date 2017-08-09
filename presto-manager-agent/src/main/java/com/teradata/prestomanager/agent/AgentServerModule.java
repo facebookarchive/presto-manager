@@ -29,6 +29,9 @@ import org.glassfish.jersey.client.JerseyClientBuilder;
 
 import javax.ws.rs.client.Client;
 
+import java.io.IOException;
+
+import static com.teradata.prestomanager.agent.announcement.DynamicAnnouncementBinder.dynamicAnnouncementBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
@@ -75,6 +78,18 @@ public class AgentServerModule
         jaxrsBinder(binder).bind(InstantConverterProvider.class);
 
         discoveryBinder(binder).bindHttpAnnouncement("presto-manager");
+
+        dynamicAnnouncementBinder(binder).forService("presto-manager")
+                .bindProperty("configured-presto-coordinator")
+                .toClassFromGetter(PrestoInformer.class,
+                        informer -> {
+                            try {
+                                return Boolean.toString(informer.isConfiguredCoordinator());
+                            }
+                            catch (IOException e) {
+                                return null;
+                            }
+                        });
     }
 
     @Provides

@@ -103,8 +103,7 @@ public class DiscoveryAgentMap
             Map<String, String> properties = service.getProperties();
             // TODO: Make agents start without an ID, and provide one on first discovery
             UUID id = service.getId();
-            boolean isCoordinator = Boolean.parseBoolean(properties.get("presto-coordinator"));
-            boolean isWorker = Boolean.parseBoolean(properties.get("presto-worker"));
+            boolean isCoordinator = Boolean.parseBoolean(properties.get("configured-presto-coordinator"));
             URI uri;
             try {
                 uri = new URI(properties.get("http")); // TODO: allow https
@@ -122,7 +121,7 @@ public class DiscoveryAgentMap
                         String.format("Invalid URI '%s' for node with ID '%s'",
                                 properties.get("http"), id), e);
             }
-            Agent agent = new Agent(uri, isCoordinator, isWorker, id);
+            Agent agent = new Agent(uri, isCoordinator, id);
             // TODO: Check for duplicate IDs
             setBuilder.add(agent);
         }
@@ -141,13 +140,11 @@ public class DiscoveryAgentMap
         private URI uri;
         private UUID id;
         private boolean isCoordinator;
-        private boolean isWorker;
 
-        private Agent(URI uri, boolean isCoordinator, boolean isWorker, UUID id)
+        private Agent(URI uri, boolean isCoordinator, UUID id)
         {
             this.uri = requireNonNull(uri, "uri is null");
             this.isCoordinator = isCoordinator;
-            this.isWorker = isWorker;
             this.id = requireNonNull(id, "null agent id");
         }
 
@@ -168,7 +165,7 @@ public class DiscoveryAgentMap
 
         private boolean isWorker()
         {
-            return isWorker;
+            return !isCoordinator;
         }
 
         @Override
