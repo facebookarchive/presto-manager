@@ -15,6 +15,7 @@ package com.teradata.prestomanager.agent;
 
 import com.google.inject.Inject;
 import com.teradata.prestomanager.agent.CommandExecutor.CommandResult;
+import com.teradata.prestomanager.common.json.JsonResponseReader;
 import io.airlift.log.Logger;
 
 import javax.ws.rs.client.Client;
@@ -52,11 +53,14 @@ public class RpmController
 
     // TODO: Inject less into here, if possible
     @Inject
-    RpmController(PrestoConfig config, Client client,
-            PrestoInformer informer, CommandExecutor executor,
+    RpmController(PrestoConfig config,
+            Client client,
+            JsonResponseReader responseReader,
+            PrestoInformer informer,
+            CommandExecutor executor,
             PrestoConfigDeployer configUtils)
     {
-        super(client, informer);
+        super(client, responseReader, informer);
         configDir = requireNonNull(config.getConfigDirectory());
         catalogDir = requireNonNull(config.getCatalogDirectory());
         dataDir = requireNonNull(config.getDataDirectory());
