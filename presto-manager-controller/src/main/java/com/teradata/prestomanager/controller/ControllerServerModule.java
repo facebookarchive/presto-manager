@@ -43,6 +43,7 @@ public class ControllerServerModule
         binder.bind(AgentMap.class).to(DiscoveryAgentMap.class).in(Scopes.SINGLETON);
         binder.bind(RequestDispatcher.class).in(Scopes.SINGLETON);
         binder.bind(Client.class).to(JerseyClient.class).in(Scopes.SINGLETON);
+        binder.bind(ResponseWrapper.class);
 
         jaxrsBinder(binder).bind(ControllerConfigAPI.class);
         jaxrsBinder(binder).bind(ControllerConnectorAPI.class);

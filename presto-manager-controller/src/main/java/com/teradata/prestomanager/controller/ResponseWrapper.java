@@ -14,7 +14,10 @@
 package com.teradata.prestomanager.controller;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.inject.Inject;
+import com.teradata.prestomanager.common.json.JsonResponseReader;
 
+import javax.annotation.Nullable;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
@@ -22,45 +25,72 @@ import static java.util.Objects.requireNonNull;
 
 public final class ResponseWrapper
 {
-    private int status;
-    private String reasonPhrase;
-    private String entity;
-    private MultivaluedMap<String, Object> headers;
+    private final JsonResponseReader reader;
 
-    private ResponseWrapper(Response response)
+    @Inject
+    private ResponseWrapper(JsonResponseReader reader)
     {
-        this.status = requireNonNull(response.getStatus());
-        this.reasonPhrase = requireNonNull(response.getStatusInfo().getReasonPhrase());
-        this.entity = response.hasEntity() ? response.readEntity(String.class) : null;
-        this.headers = response.getHeaders().isEmpty() ? null : response.getHeaders();
+        this.reader = requireNonNull(reader);
     }
 
-    public static ResponseWrapper wrapResponse(Response response)
+    public WrappedResponse wrapResponse(Response response)
     {
-        return new ResponseWrapper(response);
+        return new WrappedResponse(response.getStatus(),
+                response.getStatusInfo().getReasonPhrase(),
+                response.getHeaders(),
+                parseEntity(response));
     }
 
-    @JsonProperty
-    public int getStatus()
+    private Object parseEntity(Response response)
     {
-        return status;
+        String mediaType = response.getHeaderString("Content-Type");
+
+        if ("application/json".equals(mediaType)) {
+            return reader.readIfPossible(response).orElse(null);
+        }
+        else {
+            return response.getEntity();
+        }
     }
 
-    @JsonProperty
-    public String getReasonPhrase()
+    public static class WrappedResponse
     {
-        return reasonPhrase;
-    }
+        private int status;
+        private String reasonPhrase;
+        @Nullable private Object body;
+        private MultivaluedMap<String, Object> headers;
 
-    @JsonProperty
-    public String getEntity()
-    {
-        return entity;
-    }
+        private WrappedResponse(int status, String reason,
+                MultivaluedMap<String, Object> headers, Object body)
+        {
+            this.status = status;
+            this.reasonPhrase = requireNonNull(reason);
+            this.headers = requireNonNull(headers);
+            this.body = body;
+        }
 
-    @JsonProperty
-    public MultivaluedMap<String, Object> getHeaders()
-    {
-        return headers;
+        @JsonProperty
+        public int getStatus()
+        {
+            return status;
+        }
+
+        @JsonProperty
+        public String getReasonPhrase()
+        {
+            return reasonPhrase;
+        }
+
+        @JsonProperty
+        public Object getBody()
+        {
+            return body;
+        }
+
+        @JsonProperty
+        public MultivaluedMap<String, Object> getHeaders()
+        {
+            return headers;
+        }
     }
 }

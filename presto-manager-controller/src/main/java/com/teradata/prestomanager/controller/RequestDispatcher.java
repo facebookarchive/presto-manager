@@ -15,6 +15,7 @@ package com.teradata.prestomanager.controller;
 
 import com.google.inject.Inject;
 import com.teradata.prestomanager.common.ApiRequester;
+import com.teradata.prestomanager.controller.ResponseWrapper.WrappedResponse;
 import io.airlift.log.Logger;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -29,6 +30,7 @@ import java.util.UUID;
 
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.teradata.prestomanager.common.ExtendedStatus.MULTI_STATUS;
+import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
@@ -37,12 +39,15 @@ public class RequestDispatcher
 {
     private static final Logger LOGGER = Logger.get(RequestDispatcher.class);
 
+    private final ResponseWrapper wrapper;
     private AgentMap agentMap;
 
     @Inject
-    public RequestDispatcher(AgentMap agentMap)
+    public RequestDispatcher(ResponseWrapper wrapper,
+            AgentMap agentMap)
     {
-        this.agentMap = agentMap;
+        this.wrapper = requireNonNull(wrapper);
+        this.agentMap = requireNonNull(agentMap);
     }
 
     public Response forwardRequest(
@@ -83,11 +88,11 @@ public class RequestDispatcher
         }
 
         // Jackson serializes ArrayLists as JSON arrays
-        Map<UUID, ResponseWrapper> responses = uriMap.entrySet().parallelStream()
+        Map<UUID, WrappedResponse> responses = uriMap.entrySet().parallelStream()
                 .map(e -> new SimpleEntry<>(
                         e.getKey(),
-                        ResponseWrapper.wrapResponse(apiRequester.send(e.getValue()))))
-                .collect(toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+                        wrapper.wrapResponse(apiRequester.send(e.getValue()))))
+                .collect(toImmutableMap(SimpleEntry::getKey, SimpleEntry::getValue));
 
         return Response.status(MULTI_STATUS)
                 .type(MediaType.APPLICATION_JSON)

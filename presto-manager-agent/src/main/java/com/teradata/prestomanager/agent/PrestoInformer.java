@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import static com.teradata.prestomanager.agent.AgentFileUtils.getFileProperty;
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.UriBuilder.fromUri;
@@ -59,7 +58,7 @@ public class PrestoInformer
             throws IOException
     {
         try {
-            UriBuilder uriBuilder = fromUri(format("http://localhost:%s", getPrestoPort())).path("/v1/info/coordinator");
+            UriBuilder uriBuilder = fromUri("http://localhost").port(getPrestoPort()).path("/v1/info/coordinator");
             Response isCoordinator = client.target(uriBuilder.build()).request(TEXT_PLAIN).buildGet().invoke();
             return isCoordinator.getStatus() == 200;
         }
