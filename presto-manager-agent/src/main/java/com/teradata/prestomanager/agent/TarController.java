@@ -1,6 +1,7 @@
 package com.teradata.prestomanager.agent;
 
 import com.google.inject.Inject;
+import com.teradata.prestomanager.common.json.JsonResponseReader;
 import io.airlift.log.Logger;
 
 import javax.ws.rs.client.Client;
@@ -46,11 +47,14 @@ public class TarController
     private Optional<Path> pluginDir = Optional.empty();
 
     @Inject
-    TarController(PrestoConfig config, Client client,
-            PrestoInformer informer, CommandExecutor executor,
+    TarController(PrestoConfig config,
+            Client client,
+            JsonResponseReader responseReader,
+            PrestoInformer informer,
+            CommandExecutor executor,
             PrestoConfigDeployer configDeployer)
     {
-        super(client, informer);
+        super(client, responseReader, informer);
         this.installationDir = requireNonNull(config.getInstallationDirectory());
         this.configDir = requireNonNull(config.getConfigDirectory());
         this.catalogDir = requireNonNull(config.getCatalogDirectory());
