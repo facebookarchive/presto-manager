@@ -15,7 +15,7 @@ package com.teradata.prestomanager.agent;
 
 public enum PackageType
 {
-    RPM, TARBALL;
+    RPM, TARBALL, TEST;
 
     public static PackageType fromString(String type)
     {

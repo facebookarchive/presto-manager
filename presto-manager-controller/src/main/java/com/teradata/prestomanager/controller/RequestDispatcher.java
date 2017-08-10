@@ -83,7 +83,7 @@ public class RequestDispatcher
 
         if (apiScope == ApiScope.COORDINATOR && uriMap.size() != 1) {
             LOGGER.error("Number of coordinator is not 1");
-            return Response.status(INTERNAL_SERVER_ERROR)
+            return Response.status(INTERNAL_SERVER_ERROR).type(MediaType.APPLICATION_JSON)
                     .entity("Number of coordinator is not 1").build();
         }
 
