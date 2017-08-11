@@ -15,7 +15,7 @@ package com.teradata.prestomanager.agent.api;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.teradata.prestomanager.agent.APIFileHandler;
+import com.teradata.prestomanager.agent.ApiFileHandler;
 import com.teradata.prestomanager.agent.PrestoConfig;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -40,12 +40,12 @@ import static java.util.Objects.requireNonNull;
 @Singleton
 public final class ConnectorsAPI
 {
-    private final APIFileHandler apiFileHandler;
+    private final ApiFileHandler apiFileHandler;
 
     @Inject
     public ConnectorsAPI(PrestoConfig config)
     {
-        apiFileHandler = new APIFileHandler(
+        apiFileHandler = new ApiFileHandler(
                 requireNonNull(config.getCatalogDirectory()));
     }
 
