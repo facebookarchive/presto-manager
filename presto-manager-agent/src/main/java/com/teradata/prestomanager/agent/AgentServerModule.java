@@ -13,10 +13,12 @@
  */
 package com.teradata.prestomanager.agent;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.teradata.prestomanager.agent.api.ConfigAPI;
 import com.teradata.prestomanager.agent.api.ConnectorsAPI;
 import com.teradata.prestomanager.agent.api.ControlAPI;
@@ -29,6 +31,8 @@ import org.glassfish.jersey.client.JerseyClientBuilder;
 
 import javax.ws.rs.client.Client;
 
+import java.util.List;
+
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
@@ -36,6 +40,15 @@ import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 public class AgentServerModule
     extends AbstractConfigurationAwareModule
 {
+    private List<String> args;
+
+    public AgentServerModule() {}
+
+    public AgentServerModule(String[] args)
+    {
+        this.args = ImmutableList.copyOf(args);
+    }
+
     @Override
     protected void setup(Binder binder)
     {
@@ -49,6 +62,11 @@ public class AgentServerModule
             case RPM:
                 binder.bind(PackageController.class).to(RpmController.class)
                         .in(Scopes.SINGLETON);
+                break;
+            case TEST:
+                binder.bind(PackageController.class).to(TestPackageController.class);
+                binder.bind(new TypeLiteral<List<String>>() {})
+                        .annotatedWith(ForTesting.class).toInstance(args);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported package type");

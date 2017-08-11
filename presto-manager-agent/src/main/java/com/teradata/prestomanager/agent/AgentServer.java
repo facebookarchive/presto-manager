@@ -46,7 +46,7 @@ class AgentServer
                 new JaxrsModule(true), // requireExplicitBindings = true
                 new HttpEventModule(),
                 new JsonReaderModule(false),
-                new AgentServerModule()
+                new AgentServerModule(args)
         );
 
         try {
