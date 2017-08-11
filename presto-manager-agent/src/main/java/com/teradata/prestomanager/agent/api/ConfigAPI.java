@@ -51,7 +51,7 @@ public final class ConfigAPI
     }
 
     @GET
-    @Produces(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Get available configuration files")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved configuration")})

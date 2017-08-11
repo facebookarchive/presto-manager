@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import static java.util.Objects.requireNonNull;
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status;
 
 public class ApiFileHandler
@@ -45,19 +46,18 @@ public class ApiFileHandler
     {
         try {
             List<String> fileNames = AgentFileUtils.getFileNameList(baseDir);
-            String namesToReturn = String.join("\r\n", fileNames);
             LOGGER.debug("Successfully retrieved the list of file names from directory '%s'", baseDir.toString());
-            return Response.status(Status.OK).entity(namesToReturn).build();
+            return Response.status(Status.OK).entity(fileNames).build();
         }
         catch (NotDirectoryException | NoSuchFileException e) {
             LOGGER.error(e, "Pre-configured directory '%s' is not found or not a directory", baseDir.toString());
             return Response.status(Status.INTERNAL_SERVER_ERROR)
-                    .entity("Directory not found or is not a directory").build();
+                    .entity("Directory not found or is not a directory").type(TEXT_PLAIN).build();
         }
         catch (IOException e) {
             LOGGER.error(e, "Failed to retrieve the list of file names from directory: %s", baseDir.toString());
             return Response.status(Status.INTERNAL_SERVER_ERROR)
-                    .entity("Failed to retrieve the list of file names from directory").build();
+                    .entity("Failed to retrieve the list of file names from directory").type(TEXT_PLAIN).build();
         }
     }
 

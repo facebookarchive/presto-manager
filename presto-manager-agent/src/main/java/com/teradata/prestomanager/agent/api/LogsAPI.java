@@ -50,7 +50,7 @@ public class LogsAPI
     }
 
     @GET
-    @Produces(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Get a listing of log files")
     @ApiResponses({@ApiResponse(code = 200, message = "Retrieved file list")})
     public Response getLogList()
@@ -60,7 +60,7 @@ public class LogsAPI
 
     @GET
     @Path("/{file}")
-    @Produces(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Get Presto log file")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved logs"),
