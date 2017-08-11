@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import static com.teradata.prestomanager.agent.AgentFileUtils.getFileProperty;
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.UriBuilder.fromUri;
@@ -52,20 +51,30 @@ public class PrestoInformer
     }
 
     /**
-     * @return whether Presto is running as a coordinator
+     * Returns whether Presto is running as a coordinator
+     *
      * @throws IOException If Presto port number could not be retrieved
      */
     public boolean isRunningCoordinator()
             throws IOException
     {
         try {
-            UriBuilder uriBuilder = fromUri(format("http://localhost:%s", getPrestoPort())).path("/v1/info/coordinator");
+            UriBuilder uriBuilder = fromUri("http://localhost").port(getPrestoPort()).path("/v1/info/coordinator");
             Response isCoordinator = client.target(uriBuilder.build()).request(TEXT_PLAIN).buildGet().invoke();
             return isCoordinator.getStatus() == 200;
         }
         catch (ProcessingException e) {
-            LOGGER.warn(e, "Presto is not running");
+            LOGGER.warn(e, "Error processing Presto's HTTP response; Presto may not be running");
         }
         return false;
+    }
+
+    /**
+     * Return whether Presto is configured to run as a coordinator
+     */
+    public boolean isConfiguredCoordinator()
+            throws IOException
+    {
+        return Boolean.valueOf(getFileProperty(configFile, "coordinator"));
     }
 }
