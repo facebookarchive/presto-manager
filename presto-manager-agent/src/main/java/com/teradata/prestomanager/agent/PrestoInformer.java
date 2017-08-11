@@ -56,7 +56,7 @@ public class PrestoInformer
      * @throws IOException If Presto port number could not be retrieved
      */
     public boolean isRunningCoordinator()
-            throws IOException
+            throws IOException, ProcessingException
     {
         try {
             UriBuilder uriBuilder = fromUri("http://localhost").port(getPrestoPort()).path("/v1/info/coordinator");
@@ -65,8 +65,8 @@ public class PrestoInformer
         }
         catch (ProcessingException e) {
             LOGGER.warn(e, "Error processing Presto's HTTP response; Presto may not be running");
+            throw e;
         }
-        return false;
     }
 
     /**

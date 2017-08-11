@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.util.Map;
+import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.client.Entity.entity;
@@ -77,9 +77,9 @@ public abstract class PackageController
         }
         catch (PrestoManagerException e) {
             LOGGER.error(e, "Failed to ascertain whether presto is already installed.");
-            return javax.ws.rs.core.Response.status(INTERNAL_SERVER_ERROR).entity("Failed to ascertain whether presto is already installed.").build();
+            return Response.status(INTERNAL_SERVER_ERROR).entity("Failed to ascertain whether presto is already installed.").build();
         }
-        return javax.ws.rs.core.Response.status(ACCEPTED).entity("Presto is being installed.\r\n" +
+        return Response.status(ACCEPTED).entity("Presto is being installed.\r\n" +
                 "To verify that installation succeeded, check back later using the status API.").build();
     }
 
@@ -175,15 +175,24 @@ public abstract class PackageController
                     kill();
                     break;
                 case GRACEFUL:
-                    if (informer.isRunningCoordinator()) {
-                        LOGGER.error("Coordinator can't be gracefully stopped.");
-                        return Response.status(CONFLICT).entity("Coordinator can't be gracefully stopped").build();
+                    try {
+                        if (informer.isRunningCoordinator()) {
+                            LOGGER.error("Coordinator can't be gracefully stopped.");
+                            return Response.status(CONFLICT).entity(
+                                    "Coordinator can't be gracefully stopped").build();
+                        }
+                    }
+                    catch (ProcessingException e) {
+                        return Response.status(CONFLICT).entity(
+                                "Could not determine if Presto is running as a coordinator")
+                                .build();
                     }
                     gracefulStop();
                     break;
                 default:
                     LOGGER.error("Invalid stop type: %s", stopType);
-                    return Response.status(INTERNAL_SERVER_ERROR).entity("Invalid stop type").build();
+                    return Response.status(INTERNAL_SERVER_ERROR)
+                            .entity("Invalid stop type").build();
             }
         }
         catch (PrestoManagerException e) {
@@ -192,7 +201,8 @@ public abstract class PackageController
         }
         catch (IOException e) {
             LOGGER.error(e, "Failed to get Presto port number");
-            return Response.status(INTERNAL_SERVER_ERROR).entity("Failed to get Presto port number").build();
+            return Response.status(INTERNAL_SERVER_ERROR).entity(
+                    "Failed to get Presto port number").build();
         }
         return Response.status(OK).entity("Presto successfully stopped").build();
     }
@@ -232,66 +242,91 @@ public abstract class PackageController
 
     /**
      * The status api can be used to ascertain whether presto is installed and running.
-     * If Presto is installed, this method returns a JSON file containing Presto version
-     * If Presto is running, this method returns a JSON file containing the following details
-     * nodeVersion : Presto version installed in the node
-     * environment : The name of the environment
-     * coordinator : Specifies whether the current node functions as a coordinator
-     * state : The state of the node. ACTIVE (or) SHUTTING_DOWN
-     *
-     * @return Response containing node status
+     * <p>
+     * This information may be included in a response:
+     * <ul>
+     * <li>{@code installed}: whether Presto is installed
+     *     </li>
+     * <li>{@code version}: what version of Presto appears to be running
+     *     </li>
+     * <li>{@code running}: whether Presto is running
+     *     </li>
+     * <li>{@code state}: the Presto node's state, as reported by
+     *                    "{@code GET {presto}/v1/info/state}"
+     *     </li>
+     * <li>{@code ServerInfo}: Presto server info, as reported by
+     *                         "{@code GET {presto}/v1/info}"
+     *     </li>
+     * <li>{@code coordinator}: An object with two keys:
+     *     <ul>
+     *         <li>{@code running}: Whether the node is running as a coordinator
+     *             </li>
+     *         <li>{@code configured}: Whether the node is configured
+     *                                 to run as a coordinator
+     *             </li>
+     *     </ul>
+     *     </li>
+     * </ul>
      */
     public Response status()
     {
-        String prestoVersion;
-        try {
-            if (!isInstalled()) {
-                LOGGER.info("Presto is not installed");
-                return Response.status(OK).entity(ImmutableMap.of("installed", false)).type(APPLICATION_JSON)
+        ImmutableMap.Builder<String, Object> jsonBuilder = ImmutableMap.builder();
+        // Call this to get a return value on success
+        Supplier<Response> responseGetter = () ->
+                Response.status(OK).entity(jsonBuilder.build())
                         .type(APPLICATION_JSON).build();
+
+        try {
+            boolean installed = isInstalled();
+            jsonBuilder.put("installed", installed);
+            if (!installed) {
+                LOGGER.info("Presto is not installed");
+                return responseGetter.get();
             }
-            prestoVersion = getVersion();
+            jsonBuilder.put("version", getVersion());
+            jsonBuilder.put("running", isRunning());
         }
         catch (PrestoManagerException e) {
             LOGGER.error(e.getCause(), e.getMessage());
-            return Response.status(INTERNAL_SERVER_ERROR).entity(e.getMessage()).type(APPLICATION_JSON).build();
+            return Response.status(INTERNAL_SERVER_ERROR)
+                    .entity(e.getMessage()).type(APPLICATION_JSON).build();
         }
-        // TODO: Check isRunning() here
+
         try {
             UriBuilder uriBuilder;
             try {
-                uriBuilder = fromUri("http://localhost").port(informer.getPrestoPort()).path("/v1/info");
+                uriBuilder = fromUri("http://localhost")
+                        .port(informer.getPrestoPort()).path("/v1/info");
+
+                jsonBuilder.put("coordinator", ImmutableMap.of(
+                        "running", informer.isRunningCoordinator(),
+                        "configured", informer.isConfiguredCoordinator()));
             }
             catch (IOException e) {
-                LOGGER.error(e, "Could not get Presto port");
-                return Response.status(INTERNAL_SERVER_ERROR).entity("Could not get Presto port")
+                LOGGER.warn(e, "IOException while reading Presto configuration");
+                return Response.status(INTERNAL_SERVER_ERROR)
+                        .entity("IOException while reading Presto configuration")
                         .type(APPLICATION_JSON).build();
             }
-            // TODO: GET a JSON from that URI to get the real Presto version and other info
-            Response prestoInfo = client.target(uriBuilder.build()).request(APPLICATION_JSON).buildGet().invoke();
-            Response prestoState = client.target(uriBuilder.path("/state").build()).request(APPLICATION_JSON).buildGet().invoke();
 
-            ImmutableMap.Builder<String, Object> jsonBuilder = ImmutableMap.builder();
-
+            Response prestoState = client.target(uriBuilder.path("/state").build())
+                    .request(APPLICATION_JSON).buildGet().invoke();
             responseReader.readIfPossible(prestoState)
                     .ifPresent(o -> jsonBuilder.put("state", o));
+
+            Response prestoInfo = client.target(uriBuilder.build())
+                    .request(APPLICATION_JSON).buildGet().invoke();
             responseReader.readIfPossible(prestoInfo)
                     .ifPresent(o -> jsonBuilder.put("ServerInfo", o));
 
-            jsonBuilder.put("version", prestoVersion);
-            jsonBuilder.put("installed", true);
-            jsonBuilder.put("running", true);
             return Response.status(OK).entity(jsonBuilder.build()).type(APPLICATION_JSON).build();
         }
         catch (ProcessingException e) {
-            // TODO: Change this message; this exception means that invoking...
-            // the request had an exception, not that Presto is not running
-            LOGGER.warn(e, "Presto is not running or response could not be read");
-            Map<String, Object> statusMap = ImmutableMap.of(
-                    "installed", true,
-                    "running", false,
-                    "version", prestoVersion);
-            return Response.status(OK).entity(statusMap).type(APPLICATION_JSON).build();
+            LOGGER.warn(e, "Could not parse response from Presto");
+            jsonBuilder.put("error", ImmutableMap.of(
+                    "info", "Could not parse response from Presto",
+                    "message", e.getMessage()));
+            return responseGetter.get();
         }
     }
 
