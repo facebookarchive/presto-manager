@@ -35,7 +35,7 @@ import static java.util.Objects.requireNonNull;
 public class ApiRequester
 {
     private final Client client;
-    private final String uriTemplate;
+    private final UriCopyBuilder uriTemplate;
     private final HttpMethod method;
     private final MultivaluedMap<String, Object> headers;
     private final String mediaType;
@@ -48,7 +48,7 @@ public class ApiRequester
             String mediaType)
     {
         this.client = requireNonNull(client);
-        this.uriTemplate = requireNonNull(uriBuilder).toTemplate();
+        this.uriTemplate = new UriCopyBuilder(uriBuilder);
         this.method = requireNonNull(method);
         this.headers = requireNonNull(headers);
         this.mediaType = requireNonNull(mediaType);
@@ -87,7 +87,7 @@ public class ApiRequester
     private Invocation createInvocation(URI uri)
     {
         Invocation.Builder builder = client
-                .target(UriBuilder.fromUri(uriTemplate).uri(uri).build())
+                .target(uriTemplate.build(uri))
                 .request(mediaType)
                 .headers(headers);
 
@@ -100,6 +100,28 @@ public class ApiRequester
         }
 
         return invocation;
+    }
+
+    private static class UriCopyBuilder
+    {
+        private final UriBuilder template;
+
+        private UriCopyBuilder(UriBuilder template)
+        {
+            this.template = requireNonNull(template, "null template in UriCopyBuilder");
+        }
+
+        // TODO: Validate that the input URI does not conflict with the template
+        // This may be achieved either by checking each component in the input
+        // and the template, or by just verifying that the input has no path
+        // and no query parameters.
+        private URI build(URI uri)
+        {
+            // This is not Object.clone(); UriBuilder does not implement
+            // Cloneable. UriBuilder.clone() is specified by UriBuilder to be
+            // more efficient than UriBuilder.fromUri(template.build()).
+            return template.clone().uri(uri).build();
+        }
     }
 
     public static Builder builder(Client client, Class<?> resource)
