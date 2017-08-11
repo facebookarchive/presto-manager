@@ -11,9 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.teradata.prestomanager.controller;
+package com.teradata.prestomanager.controller.api;
 
 import com.teradata.prestomanager.common.ApiRequester;
+import com.teradata.prestomanager.controller.RequestDispatcher;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;

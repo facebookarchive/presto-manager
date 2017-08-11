@@ -16,7 +16,6 @@ package com.teradata.prestomanager.controller.api;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.teradata.prestomanager.common.ApiRequester;
-import com.teradata.prestomanager.controller.AbstractControllerAPI;
 import com.teradata.prestomanager.controller.RequestDispatcher;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
