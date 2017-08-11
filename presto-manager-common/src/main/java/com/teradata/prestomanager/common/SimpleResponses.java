@@ -18,6 +18,7 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Response.StatusType;
 
 import static java.lang.String.format;
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 
 /**
  * Utility class for generating simple HTTP responses
@@ -28,7 +29,7 @@ public final class SimpleResponses
 
     private static Response simpleResponse(StatusType status, String message)
     {
-        return Response.status(status).entity(message).build();
+        return Response.status(status).entity(message).type(TEXT_PLAIN).build();
     }
 
     /* Methods for common status codes, in numeric order */

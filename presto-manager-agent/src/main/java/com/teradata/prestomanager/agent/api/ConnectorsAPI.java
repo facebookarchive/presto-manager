@@ -50,8 +50,8 @@ public final class ConnectorsAPI
     }
 
     @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    @ApiOperation(value = "Get avaiable connector file names")
+    @Produces(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Get available connector file names")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Retrieved configuration")})
     public synchronized Response getConnectors()
