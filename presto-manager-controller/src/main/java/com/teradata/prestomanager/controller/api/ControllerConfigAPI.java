@@ -191,4 +191,27 @@ public class ControllerConfigAPI
 
         return forwardRequest(scope, apiRequester, nodeId);
     }
+
+    @DELETE
+    @Path("/{file}/{property}")
+    @ApiOperation(value = "Delete a certain property of configuration file")
+    @ApiResponses(value = {
+            @ApiResponse(code = 207, message = "Multiple responses available"),
+            @ApiResponse(code = 400, message = "Request contains invalid parameters")})
+    public Response deleteConfigProperty(
+            @PathParam("file") String file,
+            @PathParam("property") String property,
+            @QueryParam("scope") String scope,
+            @QueryParam("nodeId") List<UUID> nodeId)
+    {
+        ApiRequester apiRequester = requesterBuilder(ControllerConfigAPI.class)
+                .pathMethod("deleteConfigProperty")
+                .httpMethod(DELETE)
+                .resolveTemplate("file", file)
+                .resolveTemplate("property", property)
+                .accept(MediaType.TEXT_PLAIN)
+                .build();
+
+        return forwardRequest(scope, apiRequester, nodeId);
+    }
 }

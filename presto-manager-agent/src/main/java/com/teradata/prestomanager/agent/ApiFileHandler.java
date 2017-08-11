@@ -169,7 +169,7 @@ public class ApiFileHandler
         try {
             AgentFileUtils.removePropertyFromFile(Paths.get(baseDir.toString(), path), property);
             LOGGER.debug("Deleted property '%s' from file '%s'", property, path);
-            return Response.status(Status.ACCEPTED)
+            return Response.status(Status.OK)
                     .entity("Deleted property").build();
         }
         catch (NoSuchElementException | FileNotFoundException e) {

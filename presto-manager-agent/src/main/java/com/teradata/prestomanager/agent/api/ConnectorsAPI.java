@@ -126,4 +126,18 @@ public final class ConnectorsAPI
     {
         return apiFileHandler.deleteFile(file);
     }
+
+    @DELETE
+    @Path("/{file}/{property}")
+    @ApiOperation(value = "Delete a property from a connector file")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Property deleted"),
+            @ApiResponse(code = 404, message = "Resource not found"),
+            @ApiResponse(code = 409, message = "Request conflicts with current state")})
+    public synchronized Response deletePropertyFromFile(
+            @PathParam("file") @ApiParam("The name of a file") String file,
+            @PathParam("property") @ApiParam("A specific property") String property)
+    {
+        return apiFileHandler.deletePropertyFromFile(file, property);
+    }
 }
