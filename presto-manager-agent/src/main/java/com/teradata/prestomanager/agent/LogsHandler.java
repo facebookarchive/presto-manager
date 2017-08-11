@@ -31,12 +31,13 @@ import java.time.chrono.IsoChronology;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.teradata.prestomanager.common.SimpleResponses.badRequest;
 import static com.teradata.prestomanager.common.SimpleResponses.notFound;
 import static com.teradata.prestomanager.common.SimpleResponses.serverError;
@@ -88,12 +89,12 @@ public class LogsHandler
 
     public Response getLogList()
     {
-        String fileList;
+        List<String> fileList;
         try (Stream<Path> files = Files.list(logDirectory)) {
             fileList = files.filter(Files::isRegularFile)
                     .map(Path::getFileName)
                     .map(Path::toString)
-                    .collect(Collectors.joining("\r\n"));
+                    .collect(toImmutableList());
         }
         catch (NoSuchFileException e) {
             LOG.error(e, "Configured log directory does not exist");
@@ -177,7 +178,7 @@ public class LogsHandler
             return serverError("Date in log file has invalid format");
         }
 
-        String result = logEntries.collect(Collectors.joining("\r\n"));
+        List<String> result = logEntries.collect(toImmutableList());
 
         return Response.ok(result).build();
     }

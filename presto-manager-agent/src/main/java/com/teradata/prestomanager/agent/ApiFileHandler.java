@@ -45,9 +45,8 @@ public class ApiFileHandler
     {
         try {
             List<String> fileNames = AgentFileUtils.getFileNameList(baseDir);
-            String namesToReturn = String.join("\r\n", fileNames);
             LOGGER.debug("Successfully retrieved the list of file names from directory '%s'", baseDir.toString());
-            return Response.status(Status.OK).entity(namesToReturn).build();
+            return Response.status(Status.OK).entity(fileNames).build();
         }
         catch (NotDirectoryException | NoSuchFileException e) {
             LOGGER.error(e, "Pre-configured directory '%s' is not found or not a directory", baseDir.toString());
