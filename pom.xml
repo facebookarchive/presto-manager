@@ -36,7 +36,7 @@
 
         <!-- Plugin settings -->
         <checkstyle.skip>false</checkstyle.skip>
-        <checkstyle.fail>true</checkstyle.fail>
+        <checkstyle.fail>false</checkstyle.fail>
         <checkstyle.config>${project.root}/src/checkstyle/checks.xml</checkstyle.config>
         <shade-plugin.version>3.0.0</shade-plugin.version>
     </properties>
@@ -48,6 +48,12 @@
     </modules>
 
     <dependencies>
+        <dependency>
+            <groupId>com.google.inject.extensions</groupId>
+            <artifactId>guice-grapher</artifactId>
+            <version>4.0</version>
+        </dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>

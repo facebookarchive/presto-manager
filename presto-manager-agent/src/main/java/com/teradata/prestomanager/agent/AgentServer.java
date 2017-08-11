@@ -14,6 +14,7 @@
 package com.teradata.prestomanager.agent;
 
 import com.google.inject.Injector;
+import com.teradata.prestomanager.common.Grapher;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.discovery.client.Announcer;
 import io.airlift.discovery.client.DiscoveryModule;
@@ -50,6 +51,7 @@ class AgentServer
         try {
             Injector injector = bootstrap.strictConfig().initialize();
             injector.getInstance(Announcer.class).start();
+            Grapher.graph(AgentServer.class.getSimpleName() + ".dot", injector);
         }
         catch (Exception e) {
             LOG.error(e, "Error starting server");
