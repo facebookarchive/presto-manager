@@ -13,6 +13,7 @@
  */
 package com.teradata.prestomanager.controller;
 
+import com.teradata.prestomanager.common.json.JsonReaderModule;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.discovery.client.DiscoveryModule;
 import io.airlift.discovery.server.DiscoveryServerModule;
@@ -48,6 +49,7 @@ public class ControllerServer
                 new JaxrsModule(true), // requireExplicitBindings = true'
                 new JmxModule(),
                 new MBeanModule(),
+                new JsonReaderModule(false),
                 new ControllerServerModule()
         );
 

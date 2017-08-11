@@ -14,53 +14,104 @@
 package com.teradata.prestomanager.controller;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
+import com.google.inject.Inject;
+import com.teradata.prestomanager.common.json.JsonResponseReader;
+import io.airlift.log.Logger;
 
+import javax.annotation.Nullable;
+import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+
+import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
 public final class ResponseWrapper
 {
-    private int status;
-    private String reasonPhrase;
-    private String entity;
-    private MultivaluedMap<String, Object> headers;
+    private static final Logger LOGGER = Logger.get(ResponseWrapper.class);
 
-    private ResponseWrapper(Response response)
+    private final JsonResponseReader reader;
+
+    @Inject
+    private ResponseWrapper(JsonResponseReader reader)
     {
-        this.status = requireNonNull(response.getStatus());
-        this.reasonPhrase = requireNonNull(response.getStatusInfo().getReasonPhrase());
-        this.entity = response.hasEntity() ? response.readEntity(String.class) : null;
-        this.headers = response.getHeaders().isEmpty() ? null : response.getHeaders();
+        this.reader = requireNonNull(reader);
     }
 
-    public static ResponseWrapper wrapResponse(Response response)
+    public WrappedResponse wrapResponse(Response response)
     {
-        return new ResponseWrapper(response);
+        return new WrappedResponse(response.getStatus(),
+                response.getStatusInfo().getReasonPhrase(),
+                response.getHeaders(),
+                parseEntity(response));
     }
 
-    @JsonProperty
-    public int getStatus()
+    private Object parseEntity(Response response)
     {
-        return status;
+        String mediaType = response.getHeaderString("Content-Type");
+
+        if ("application/json".equals(mediaType)) {
+            try {
+                return reader.read(response);
+            }
+            catch (IOException e) {
+                LOGGER.warn(e, "Error parsing response to JSON");
+                return ImmutableMap.of("error",
+                        "Could not parse response JSON");
+            }
+        }
+        else {
+            try {
+                return response.readEntity(String.class);
+            }
+            catch (ProcessingException e) {
+                LOGGER.warn(e, "Error parsing response to string");
+                return ImmutableMap.of("error",
+                        "Could not parse response as String");
+            }
+        }
     }
 
-    @JsonProperty
-    public String getReasonPhrase()
+    public static class WrappedResponse
     {
-        return reasonPhrase;
-    }
+        private int status;
+        private String reasonPhrase;
+        @Nullable private Object body;
+        private MultivaluedMap<String, Object> headers;
 
-    @JsonProperty
-    public String getEntity()
-    {
-        return entity;
-    }
+        private WrappedResponse(int status, String reason,
+                MultivaluedMap<String, Object> headers, Object body)
+        {
+            this.status = status;
+            this.reasonPhrase = requireNonNull(reason);
+            this.headers = requireNonNull(headers);
+            this.body = body;
+        }
 
-    @JsonProperty
-    public MultivaluedMap<String, Object> getHeaders()
-    {
-        return headers;
+        @JsonProperty
+        public int getStatus()
+        {
+            return status;
+        }
+
+        @JsonProperty
+        public String getReasonPhrase()
+        {
+            return reasonPhrase;
+        }
+
+        @JsonProperty
+        public Object getBody()
+        {
+            return body;
+        }
+
+        @JsonProperty
+        public MultivaluedMap<String, Object> getHeaders()
+        {
+            return headers;
+        }
     }
 }

@@ -29,10 +29,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.StringJoiner;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.nio.file.Files.copy;
 import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.createTempFile;
@@ -40,7 +40,6 @@ import static java.nio.file.Files.isDirectory;
 import static java.nio.file.Files.isRegularFile;
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static java.util.stream.Collectors.collectingAndThen;
 
 public final class AgentFileUtils
 {
@@ -51,8 +50,9 @@ public final class AgentFileUtils
     {
         ImmutableList<String> fileNames;
         try (Stream<Path> stream = Files.list(path)) {
-            fileNames = stream.filter(Files::isRegularFile).map(Path::getFileName).map(Path::toString)
-                    .collect(collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
+            fileNames = stream.filter(Files::isRegularFile)
+                    .map(Path::getFileName).map(Path::toString)
+                    .collect(toImmutableList());
         }
         return fileNames;
     }
@@ -153,7 +153,7 @@ public final class AgentFileUtils
 
     {
         List<Path> filePaths = Files.list(src).filter(path -> isRegularFile(path, NOFOLLOW_LINKS))
-                .collect(ImmutableList.toImmutableList());
+                .collect(toImmutableList());
         if (!isDirectory(dest)) {
             createDirectories(dest);
         }
