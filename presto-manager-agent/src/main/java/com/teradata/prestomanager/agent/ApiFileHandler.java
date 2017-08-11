@@ -31,12 +31,12 @@ import java.util.NoSuchElementException;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.Response.Status;
 
-public class APIFileHandler
+public class ApiFileHandler
 {
-    private static final Logger LOGGER = Logger.get(APIFileHandler.class);
+    private static final Logger LOGGER = Logger.get(ApiFileHandler.class);
     private final Path baseDir;
 
-    public APIFileHandler(Path baseDir)
+    public ApiFileHandler(Path baseDir)
     {
         this.baseDir = requireNonNull(baseDir, "Base directory is null");
     }
