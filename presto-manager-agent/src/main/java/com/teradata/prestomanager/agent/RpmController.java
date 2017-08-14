@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 import static com.teradata.prestomanager.agent.AgentFileUtils.downloadFile;
 import static java.lang.String.format;
@@ -199,7 +200,7 @@ public class RpmController
         }
     }
 
-    public String getVersion()
+    public Optional<String> getVersion()
             throws PrestoManagerException
     {
         CommandResult commandResult = executor.getCommandResult(
@@ -207,7 +208,7 @@ public class RpmController
         if (commandResult.getExitValue() != 0) {
             throw new PrestoManagerException("Failed to retrieve Presto version", commandResult.getExitValue());
         }
-        return commandResult.getOutput();
+        return Optional.of(commandResult.getOutput());
     }
 
     public boolean isInstalled()

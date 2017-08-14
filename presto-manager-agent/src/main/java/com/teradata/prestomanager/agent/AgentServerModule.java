@@ -50,6 +50,10 @@ public class AgentServerModule
                 binder.bind(PackageController.class).to(RpmController.class)
                         .in(Scopes.SINGLETON);
                 break;
+            case TARBALL:
+                binder.bind(PackageController.class).to(TarController.class)
+                        .in(Scopes.SINGLETON);
+                break;
             default:
                 throw new IllegalArgumentException("Unsupported package type");
         }

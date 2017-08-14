@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
+import java.util.Optional;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -252,7 +253,7 @@ public abstract class PackageController
                 return Response.status(OK).entity(GSON.toJson(ImmutableMap.of("installed", false)))
                         .type(APPLICATION_JSON).build();
             }
-            prestoVersion = getVersion();
+            prestoVersion = getVersion().orElse("N/A");
         }
         catch (PrestoManagerException e) {
             LOGGER.error(e.getCause(), e.getMessage());
@@ -321,7 +322,7 @@ public abstract class PackageController
     protected abstract void restartAsync()
             throws PrestoManagerException;
 
-    protected abstract String getVersion()
+    protected abstract Optional<String> getVersion()
             throws PrestoManagerException;
 
     protected abstract boolean isInstalled()
