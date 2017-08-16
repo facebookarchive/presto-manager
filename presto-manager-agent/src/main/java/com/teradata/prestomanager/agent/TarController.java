@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -17,7 +16,6 @@ import java.util.Optional;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.teradata.prestomanager.agent.AgentFileUtils.downloadFile;
-import static com.teradata.prestomanager.agent.AgentFileUtils.updateProperty;
 import static java.lang.String.format;
 import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.delete;
@@ -29,15 +27,13 @@ public class TarController
         extends PackageController
 {
     private static final Logger LOGGER = Logger.get(TarController.class);
-    // TODO: Make this configurable
-    private static final Path INSTALLATION_DIR = Paths.get("presto/");
 
+    private final Path installationDir;
     private final Path configDir;
     private final Path catalogDir;
     private final Path dataDir;
-    // TODO: pluginDir should not be configurable
-    private final Path pluginDir;
     private final Path logDir;
+    private final Optional<Path> launcherPropertiesPath;
     private final CommandExecutor executor;
     private final PrestoConfigDeployer configDeployer;
 
@@ -46,6 +42,7 @@ public class TarController
      */
     private Optional<Path> launcherScript = Optional.empty();
     private Optional<String> launcherConfig = Optional.empty();
+    private Optional<Path> pluginDir = Optional.empty();
 
     @Inject
     TarController(PrestoConfig config, Client client,
@@ -53,11 +50,12 @@ public class TarController
             PrestoConfigDeployer configDeployer)
     {
         super(client, informer);
-        this.configDir = requireNonNull(config.getConfigurationDirectory());
+        this.installationDir = requireNonNull(config.getInstallationDirectory());
+        this.configDir = requireNonNull(config.getConfigDirectory());
         this.catalogDir = requireNonNull(config.getCatalogDirectory());
         this.dataDir = requireNonNull(config.getDataDirectory());
-        this.pluginDir = requireNonNull(config.getPluginDirectory());
         this.logDir = requireNonNull(config.getLogDirectory());
+        this.launcherPropertiesPath = requireNonNull(config.getLauncherPropertiesPath());
         this.executor = requireNonNull(executor);
         this.configDeployer = requireNonNull(configDeployer);
     }
@@ -71,9 +69,10 @@ public class TarController
         Path tempFile = getTarPackage(packageUrl);
         try {
             tarInstall(tempFile);
-            configDeployer.deployDefaultConfig(configDir, catalogDir, dataDir, pluginDir, logDir);
-            configDeployer.deployDefaultConnectors(catalogDir);
             postInstall();
+            configDeployer.deployDefaultConfig(configDir, catalogDir, dataDir,
+                    pluginDir.orElseThrow(() -> new PrestoManagerException("pluginDir is empty")), logDir);
+            configDeployer.deployDefaultConnectors(catalogDir);
             LOGGER.debug("Successfully installed Presto");
         }
         finally {
@@ -99,11 +98,11 @@ public class TarController
             throws PrestoManagerException
     {
         try {
-            if (isDirectory(INSTALLATION_DIR)) {
-                throw new PrestoManagerException(format("Directory '%s' already exists", INSTALLATION_DIR.toString()));
+            if (isDirectory(installationDir)) {
+                throw new PrestoManagerException(format("Directory '%s' already exists", installationDir.toString()));
             }
             else {
-                createDirectories(INSTALLATION_DIR);
+                createDirectories(installationDir);
             }
             createDirectories(configDir);
         }
@@ -111,7 +110,7 @@ public class TarController
             throw new PrestoManagerException("Failed to create directory", e);
         }
         int untarResult = executor.runCommand("tar", "-xzvf", tarFile.toAbsolutePath().toString(),
-                "-C", INSTALLATION_DIR.toAbsolutePath().toString());
+                "-C", installationDir.toAbsolutePath().toString());
         if (untarResult != 0) {
             throw new PrestoManagerException("Failed to install Presto", untarResult);
         }
@@ -121,26 +120,25 @@ public class TarController
             throws PrestoManagerException
     {
         try {
-            Path prestoDir = Files.list(INSTALLATION_DIR)
+            Path prestoDir = Files.list(installationDir)
                     .filter(path -> isDirectory(path))
                     .reduce((a, b) -> {
-                        throw new IllegalStateException(format("Multiple directories within `%s`", INSTALLATION_DIR));
+                        throw new IllegalStateException(format("Multiple directories within `%s`", installationDir));
                     })
                     .get().getFileName();
-            launcherScript = Optional.of(INSTALLATION_DIR.toAbsolutePath().resolve(prestoDir).resolve("bin/launcher"));
-            updateProperty(configDir.toAbsolutePath().resolve("node.properties"), "plugin.dir",
-                    INSTALLATION_DIR.toAbsolutePath().resolve(prestoDir).resolve("plugin").toString());
+            launcherScript = Optional.of(installationDir.toAbsolutePath().resolve(prestoDir).resolve("bin/launcher"));
+            pluginDir = Optional.of(installationDir.toAbsolutePath().resolve(prestoDir).resolve("plugin"));
             /**
              * If there are extra spaces in this string, there will be problems
              * while executing commands using {@link #runLauncherCommand(String)}
-             * TODO: Make --launcher-config configurable
-             * TODO: Add --server-log-file --launcher-log-file
              */
             launcherConfig = Optional.of("--data-dir " + dataDir.toAbsolutePath()
-                    + " --launcher-config " + INSTALLATION_DIR.toAbsolutePath().resolve(prestoDir).resolve("bin/launcher.properties")
+                    + " --launcher-config " + launcherPropertiesPath.orElse(installationDir.toAbsolutePath().resolve(prestoDir).resolve("bin/launcher.properties"))
                     + " --node-config " + configDir.toAbsolutePath().resolve("node.properties")
                     + " --jvm-config " + configDir.toAbsolutePath().resolve("jvm.config")
-                    + " --config " + configDir.toAbsolutePath().resolve("config.properties"));
+                    + " --config " + configDir.toAbsolutePath().resolve("config.properties")
+                    + " --launcher-log-file " + logDir.toAbsolutePath().resolve("launcher.log")
+                    + " --server-log-file " + logDir.toAbsolutePath().resolve("server.log"));
         }
         catch (IOException e) {
             throw new PrestoManagerException("Failed to perform post install steps", e);
@@ -154,7 +152,7 @@ public class TarController
             throw new PrestoManagerException("Unsupported parameter 'checkDependencies' for tarball uninstall");
         }
         try {
-            deleteRecursively(INSTALLATION_DIR);
+            deleteRecursively(installationDir);
             deleteRecursively(dataDir);
             deleteRecursively(catalogDir);
             deleteRecursively(configDir);
@@ -191,7 +189,8 @@ public class TarController
                 uninstallAsync(checkDependencies);
                 tarInstall(tempPackage);
                 postInstall();
-                configDeployer.deployDefaultConfig(configDir, catalogDir, dataDir, pluginDir, logDir);
+                configDeployer.deployDefaultConfig(configDir, catalogDir, dataDir,
+                        pluginDir.orElseThrow(() -> new PrestoManagerException("pluginDir is empty")), logDir);
                 configDeployer.deployDefaultConnectors(catalogDir);
             }
         }
@@ -256,7 +255,7 @@ public class TarController
     public boolean isInstalled()
             throws PrestoManagerException
     {
-        return isDirectory(INSTALLATION_DIR) && launcherScript.isPresent() && isRegularFile(launcherScript.get());
+        return isDirectory(installationDir) && launcherScript.isPresent() && isRegularFile(launcherScript.get());
     }
 
     private static void deleteTempFile(Path file)

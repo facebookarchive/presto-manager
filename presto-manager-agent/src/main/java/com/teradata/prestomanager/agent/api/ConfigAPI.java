@@ -47,7 +47,7 @@ public final class ConfigAPI
     public ConfigAPI(PrestoConfig config)
     {
         apiFileHandler = new ApiFileHandler(
-                requireNonNull(config.getConfigurationDirectory()));
+                requireNonNull(config.getConfigDirectory()));
     }
 
     @GET

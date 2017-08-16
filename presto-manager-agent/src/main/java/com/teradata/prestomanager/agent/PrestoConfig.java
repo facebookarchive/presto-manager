@@ -13,98 +13,28 @@
  */
 package com.teradata.prestomanager.agent;
 
-import io.airlift.configuration.Config;
-
 import javax.validation.constraints.NotNull;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Optional;
 
-public class PrestoConfig
+public interface PrestoConfig
 {
-    private Path configurationDirectory;
-    private Path catalogDirectory;
-    private Path dataDirectory;
-    private Path pluginDirectory;
-    private Path logDirectory;
-    private Path configProperties;
-    private Path launcherScript;
-
-    @Config("config-dir")
-    public PrestoConfig setConfigurationDirectory(String path)
-    {
-        configurationDirectory = Paths.get(path);
-        return this;
-    }
+    @NotNull
+    Path getInstallationDirectory();
 
     @NotNull
-    public Path getConfigurationDirectory()
-    {
-        return configurationDirectory;
-    }
-
-    @Config("data-dir")
-    public PrestoConfig setDataDirectory(String path)
-    {
-        dataDirectory = Paths.get(path);
-        return this;
-    }
+    Path getConfigDirectory();
 
     @NotNull
-    public Path getDataDirectory()
-    {
-        return dataDirectory;
-    }
-
-    @Config("plugin-dir")
-    public PrestoConfig setPluginDirectory(String path)
-    {
-        pluginDirectory = Paths.get(path);
-        return this;
-    }
+    Path getCatalogDirectory();
 
     @NotNull
-    public Path getPluginDirectory()
-    {
-        return pluginDirectory;
-    }
-
-    @Config("catalog-dir")
-    public PrestoConfig setCatalogDirectory(String path)
-    {
-        catalogDirectory = Paths.get(path);
-        return this;
-    }
+    Path getDataDirectory();
 
     @NotNull
-    public Path getCatalogDirectory()
-    {
-        return catalogDirectory;
-    }
-
-    @Config("log-dir")
-    public PrestoConfig setLogDirectory(String path)
-    {
-        this.logDirectory = Paths.get(path);
-        return this;
-    }
+    Path getLogDirectory();
 
     @NotNull
-    public Path getLogDirectory()
-    {
-        return logDirectory;
-    }
-
-    @Config("launcher")
-    public PrestoConfig setLauncherPath(String path)
-    {
-        this.launcherScript = Paths.get(path);
-        return this;
-    }
-
-    @NotNull
-    public Path getLauncherPath()
-    {
-        return launcherScript;
-    }
+    Optional<Path> getLauncherPropertiesPath();
 }

@@ -39,7 +39,7 @@ public class PrestoInformer
     PrestoInformer(Client client, PrestoConfig config)
     {
         this.client = requireNonNull(client);
-        this.configFile = requireNonNull(config.getConfigurationDirectory())
+        this.configFile = requireNonNull(config.getConfigDirectory())
                 .resolve("config.properties");
     }
 

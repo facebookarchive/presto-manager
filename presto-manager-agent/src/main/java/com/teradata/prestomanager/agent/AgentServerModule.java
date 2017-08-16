@@ -34,7 +34,7 @@ import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 
 public class AgentServerModule
-    extends AbstractConfigurationAwareModule
+        extends AbstractConfigurationAwareModule
 {
     @Override
     protected void setup(Binder binder)
@@ -43,14 +43,17 @@ public class AgentServerModule
 
         // buildConfigObject also calls bindConfig
         AgentConfig config = buildConfigObject(AgentConfig.class);
-        configBinder(binder).bindConfig(PrestoConfig.class, "presto");
 
         switch (config.getPackageType()) {
             case RPM:
+                configBinder(binder).bindConfig(PrestoRpmConfig.class, "presto");
+                binder.bind(PrestoConfig.class).to(PrestoRpmConfig.class);
                 binder.bind(PackageController.class).to(RpmController.class)
                         .in(Scopes.SINGLETON);
                 break;
             case TARBALL:
+                configBinder(binder).bindConfig(PrestoTarConfig.class, "presto");
+                binder.bind(PrestoConfig.class).to(PrestoTarConfig.class);
                 binder.bind(PackageController.class).to(TarController.class)
                         .in(Scopes.SINGLETON);
                 break;
