@@ -40,6 +40,7 @@ public class RpmController
     private final Path dataDir;
     private final Path pluginDir;
     private final Path launcherScript;
+    private final Path logDir;
     private final CommandExecutor executor;
     private final PrestoConfigDeployer configUtils;
 
@@ -55,6 +56,7 @@ public class RpmController
         dataDir = requireNonNull(config.getDataDirectory());
         pluginDir = requireNonNull(config.getPluginDirectory());
         launcherScript = requireNonNull(config.getLauncherPath());
+        logDir = requireNonNull(config.getLogDirectory());
         this.executor = requireNonNull(executor);
         this.configUtils = requireNonNull(configUtils);
     }
@@ -76,7 +78,7 @@ public class RpmController
             if (installRpm != 0) {
                 throw new PrestoManagerException("Failed to install Presto", installRpm);
             }
-            configUtils.deployDefaultConfig(configDir, dataDir, pluginDir);
+            configUtils.deployDefaultConfig(configDir, catalogDir, dataDir, pluginDir, logDir);
             configUtils.deployDefaultConnectors(catalogDir);
             LOGGER.debug("Successfully installed Presto");
         }
@@ -139,7 +141,7 @@ public class RpmController
             }
             else {
                 upgradePackage(tempPackage.toString(), checkDependencies);
-                configUtils.deployDefaultConfig(configDir, dataDir, pluginDir);
+                configUtils.deployDefaultConfig(configDir, catalogDir, dataDir, pluginDir, logDir);
                 configUtils.deployDefaultConnectors(catalogDir);
             }
         }

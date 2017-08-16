@@ -37,6 +37,7 @@ public class TarController
     private final Path dataDir;
     // TODO: pluginDir should not be configurable
     private final Path pluginDir;
+    private final Path logDir;
     private final CommandExecutor executor;
     private final PrestoConfigDeployer configDeployer;
 
@@ -56,6 +57,7 @@ public class TarController
         this.catalogDir = requireNonNull(config.getCatalogDirectory());
         this.dataDir = requireNonNull(config.getDataDirectory());
         this.pluginDir = requireNonNull(config.getPluginDirectory());
+        this.logDir = requireNonNull(config.getLogDirectory());
         this.executor = requireNonNull(executor);
         this.configDeployer = requireNonNull(configDeployer);
     }
@@ -69,7 +71,7 @@ public class TarController
         Path tempFile = getTarPackage(packageUrl);
         try {
             tarInstall(tempFile);
-            configDeployer.deployDefaultConfig(configDir, dataDir, pluginDir);
+            configDeployer.deployDefaultConfig(configDir, catalogDir, dataDir, pluginDir, logDir);
             configDeployer.deployDefaultConnectors(catalogDir);
             postInstall();
             LOGGER.debug("Successfully installed Presto");
@@ -189,7 +191,7 @@ public class TarController
                 uninstallAsync(checkDependencies);
                 tarInstall(tempPackage);
                 postInstall();
-                configDeployer.deployDefaultConfig(configDir, dataDir, pluginDir);
+                configDeployer.deployDefaultConfig(configDir, catalogDir, dataDir, pluginDir, logDir);
                 configDeployer.deployDefaultConnectors(catalogDir);
             }
         }
