@@ -87,6 +87,7 @@ public class ControllerPackageAPI
             @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response upgrade(String urlToFetchPackage,
             @QueryParam("checkDependencies") @DefaultValue("true") boolean checkDependencies,
+            @QueryParam("forceUpgrade") @DefaultValue("false") boolean forceUpgrade,
             @QueryParam("preserveConfig") @DefaultValue("true") boolean preserveConfig,
             @QueryParam("scope") String scope,
             @QueryParam("nodeId") List<UUID> nodeId)
@@ -98,6 +99,7 @@ public class ControllerPackageAPI
 
         optionalQueryParam(apiRequester, "checkDependencies", checkDependencies);
         optionalQueryParam(apiRequester, "preserveConfig", preserveConfig);
+        optionalQueryParam(apiRequester, "forceUpgrade", forceUpgrade);
 
         return forwardRequest(scope, apiRequester.build(), nodeId);
     }
