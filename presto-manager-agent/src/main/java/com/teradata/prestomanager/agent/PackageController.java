@@ -81,9 +81,9 @@ public abstract class PackageController
         }
         catch (PrestoManagerException e) {
             LOGGER.error(e, "Failed to ascertain whether presto is already installed.");
-            return javax.ws.rs.core.Response.status(INTERNAL_SERVER_ERROR).entity("Failed to ascertain whether presto is already installed.").build();
+            return Response.status(INTERNAL_SERVER_ERROR).entity("Failed to ascertain whether presto is already installed.").build();
         }
-        return javax.ws.rs.core.Response.status(ACCEPTED).entity("Presto is being installed.\r\n" +
+        return Response.status(ACCEPTED).entity("Presto is being installed.\r\n" +
                 "To verify that installation succeeded, check back later using the status API.").build();
     }
 
@@ -96,8 +96,8 @@ public abstract class PackageController
             }
             if (isRunning()) {
                 if (!forceUninstall) {
-                    LOGGER.error("Presto is running. Stop Presto before beginning upgrade.");
-                    return Response.status(CONFLICT).entity("Presto is running. Stop Presto before beginning upgrade.").build();
+                    LOGGER.error("Presto is running. Stop Presto before beginning uninstall.");
+                    return Response.status(CONFLICT).entity("Presto is running. Stop Presto before beginning uninstall.").build();
                 }
                 LOGGER.warn("Presto is running; Presto will be forcibly stopped before attempting to uninstall.");
                 terminate();
@@ -200,7 +200,7 @@ public abstract class PackageController
         return Response.status(OK).entity("Presto successfully stopped").build();
     }
 
-    public void gracefulStop()
+    private void gracefulStop()
             throws PrestoManagerException
     {
         try {

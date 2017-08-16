@@ -111,14 +111,14 @@ public class ControllerPackageAPI
             @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response uninstall(
             @QueryParam("checkDependencies") @DefaultValue("true") boolean checkDependencies,
-            @QueryParam("ignoreErrors") @DefaultValue("false") boolean ignoreErrors,
+            @QueryParam("forceUninstall") @DefaultValue("false") boolean forceUninstall,
             @QueryParam("scope") String scope,
             @QueryParam("nodeId") List<UUID> nodeId)
     {
         ApiRequester.Builder apiRequester = requesterBuilder(ControllerPackageAPI.class)
                 .httpMethod(DELETE);
 
-        optionalQueryParam(apiRequester, "ignoreErrors", ignoreErrors);
+        optionalQueryParam(apiRequester, "forceUninstall", forceUninstall);
         optionalQueryParam(apiRequester, "checkDependencies", checkDependencies);
 
         return forwardRequest(scope, apiRequester.build(), nodeId);
