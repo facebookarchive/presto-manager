@@ -16,7 +16,6 @@ package com.teradata.prestomanager.agent;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 
-import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -52,21 +51,32 @@ public class PrestoInformer
 
     /**
      * Returns whether Presto is running as a coordinator
-     *
+     *<p>
+     * Always check whether Presto is running using {@link PackageController#isRunning()}
+     * before calling this method
+     * <p>
+     *     Intended usage:
+     * <pre>
+     *     if (isRunning()) {
+     *         if (isRunningCoordinator()) {
+     *             // Presto is running as coordinator
+     *         }
+     *         else {
+     *             // Presto is running as worker
+     *         }
+     *     }
+     *     else {
+     *         // Presto is not running
+     *     }
+     * </pre>
      * @throws IOException If Presto port number could not be retrieved
      */
     public boolean isRunningCoordinator()
             throws IOException
     {
-        try {
-            UriBuilder uriBuilder = fromUri("http://localhost").port(getPrestoPort()).path("/v1/info/coordinator");
-            Response isCoordinator = client.target(uriBuilder.build()).request(TEXT_PLAIN).buildGet().invoke();
-            return isCoordinator.getStatus() == 200;
-        }
-        catch (ProcessingException e) {
-            LOGGER.warn(e, "Error processing Presto's HTTP response; Presto may not be running");
-        }
-        return false;
+        UriBuilder uriBuilder = fromUri("http://localhost").port(getPrestoPort()).path("/v1/info/coordinator");
+        Response isCoordinator = client.target(uriBuilder.build()).request(TEXT_PLAIN).buildGet().invoke();
+        return isCoordinator.getStatus() == 200;
     }
 
     /**

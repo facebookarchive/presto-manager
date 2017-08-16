@@ -20,13 +20,15 @@ import com.google.gson.JsonParser;
 import com.teradata.prestomanager.common.StopType;
 import io.airlift.log.Logger;
 
-import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Map;
 import java.util.Optional;
@@ -209,9 +211,6 @@ public abstract class PackageController
                 throw new PrestoManagerException("Failed to stop presto gracefully");
             }
         }
-        catch (ProcessingException e) {
-            LOGGER.warn(e, "Presto is not running");
-        }
         catch (IOException e) {
             throw new PrestoManagerException("Failed to get Presto port number.", e);
         }
@@ -246,14 +245,20 @@ public abstract class PackageController
      */
     public Response status()
     {
-        String prestoVersion;
         try {
             if (!isInstalled()) {
                 LOGGER.info("Presto is not installed");
                 return Response.status(OK).entity(GSON.toJson(ImmutableMap.of("installed", false)))
                         .type(APPLICATION_JSON).build();
             }
-            prestoVersion = getVersion().orElse("N/A");
+            if (!isRunning()) {
+                LOGGER.info("Presto is not running");
+                Map<String, Object> statusMap = ImmutableMap.of(
+                        "installed", true,
+                        "running", false,
+                        "version", getVersion().orElse("N/A"));
+                return Response.status(OK).entity(GSON.toJson(statusMap)).type(APPLICATION_JSON).build();
+            }
         }
         catch (PrestoManagerException e) {
             LOGGER.error(e.getCause(), e.getMessage());
@@ -274,14 +279,6 @@ public abstract class PackageController
             prestoStatus.addProperty("running", true);
             return Response.status(OK).entity(prestoStatus.toString()).type(APPLICATION_JSON).build();
         }
-        catch (ProcessingException e) {
-            LOGGER.info("Presto is not running");
-            Map<String, Object> statusMap = ImmutableMap.of(
-                    "installed", true,
-                    "running", false,
-                    "version", prestoVersion);
-            return Response.status(OK).entity(GSON.toJson(statusMap)).type(APPLICATION_JSON).build();
-        }
         catch (IOException e) {
             LOGGER.error(e, "Failed to get status.");
             return Response.status(INTERNAL_SERVER_ERROR).entity(GSON.toJson("Failed to get status"))
@@ -299,6 +296,27 @@ public abstract class PackageController
                 LOGGER.error(e.getCause(), e.getMessage());
             }
         }).start();
+    }
+
+    private boolean isRunning()
+            throws PrestoManagerException
+    {
+        try {
+            URI uri = fromUri("http://localhost").port(informer.getPrestoPort()).path("v1/info").build();
+            HttpURLConnection httpURLConnection = (HttpURLConnection) uri.toURL().openConnection();
+            httpURLConnection.setInstanceFollowRedirects(false);
+            httpURLConnection.setRequestMethod("GET");
+            try {
+                httpURLConnection.connect();
+                return true;
+            }
+            catch (ConnectException e) {
+                return false;
+            }
+        }
+        catch (IOException e) {
+            throw new PrestoManagerException("Failed to ascertain whether Presto is running", e);
+        }
     }
 
     protected abstract void installAsync(URL url, boolean checkDependencies)
@@ -326,8 +344,5 @@ public abstract class PackageController
             throws PrestoManagerException;
 
     protected abstract boolean isInstalled()
-            throws PrestoManagerException;
-
-    protected abstract boolean isRunning()
             throws PrestoManagerException;
 }
