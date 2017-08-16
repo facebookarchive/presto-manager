@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 import static com.teradata.prestomanager.agent.AgentFileUtils.downloadFile;
@@ -35,11 +36,16 @@ public class RpmController
 {
     private static final Logger LOGGER = Logger.get(RpmController.class);
 
+    /**
+     * These variables are not configurable for RPM installation
+     * because they are hard-coded in presto-server-rpm init.d scripts
+     */
+    private static final Path PLUGIN_DIR = Paths.get("/usr/lib/presto/lib/plugin");
+    private static final Path LAUNCHER_SCRIPT = Paths.get("/usr/lib/presto/bin/launcher");
+
     private final Path configDir;
     private final Path catalogDir;
     private final Path dataDir;
-    private final Path pluginDir;
-    private final Path launcherScript;
     private final Path logDir;
     private final CommandExecutor executor;
     private final PrestoConfigDeployer configUtils;
@@ -51,11 +57,9 @@ public class RpmController
             PrestoConfigDeployer configUtils)
     {
         super(client, informer);
-        configDir = requireNonNull(config.getConfigurationDirectory());
+        configDir = requireNonNull(config.getConfigDirectory());
         catalogDir = requireNonNull(config.getCatalogDirectory());
         dataDir = requireNonNull(config.getDataDirectory());
-        pluginDir = requireNonNull(config.getPluginDirectory());
-        launcherScript = requireNonNull(config.getLauncherPath());
         logDir = requireNonNull(config.getLogDirectory());
         this.executor = requireNonNull(executor);
         this.configUtils = requireNonNull(configUtils);
@@ -78,7 +82,7 @@ public class RpmController
             if (installRpm != 0) {
                 throw new PrestoManagerException("Failed to install Presto", installRpm);
             }
-            configUtils.deployDefaultConfig(configDir, catalogDir, dataDir, pluginDir, logDir);
+            configUtils.deployDefaultConfig(configDir, catalogDir, dataDir, PLUGIN_DIR, logDir);
             configUtils.deployDefaultConnectors(catalogDir);
             LOGGER.debug("Successfully installed Presto");
         }
@@ -141,7 +145,7 @@ public class RpmController
             }
             else {
                 upgradePackage(tempPackage.toString(), checkDependencies);
-                configUtils.deployDefaultConfig(configDir, catalogDir, dataDir, pluginDir, logDir);
+                configUtils.deployDefaultConfig(configDir, catalogDir, dataDir, PLUGIN_DIR, logDir);
                 configUtils.deployDefaultConnectors(catalogDir);
             }
         }
@@ -187,7 +191,7 @@ public class RpmController
     public void kill()
             throws PrestoManagerException
     {
-        executor.runCommand("sudo", launcherScript.toString(), "kill");
+        executor.runCommand("sudo", LAUNCHER_SCRIPT.toString(), "kill");
         int prestoKill = executor.runCommand("service", "presto", "status");
         if (prestoKill != 3) {
             throw new PrestoManagerException("Failed to stop presto", prestoKill);
