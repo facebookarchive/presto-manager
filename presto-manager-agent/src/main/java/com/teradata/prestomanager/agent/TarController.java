@@ -16,6 +16,7 @@ import java.util.Optional;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.teradata.prestomanager.agent.AgentFileUtils.downloadFile;
+import static com.teradata.prestomanager.agent.AgentFileUtils.updateProperty;
 import static java.lang.String.format;
 import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.delete;
@@ -180,6 +181,11 @@ public class TarController
                     tarInstall(tempPackage);
                     postInstall();
                     configDeployer.restoreDirectory(tempConfigDir, configDir);
+                    updateProperty(configDir.toAbsolutePath().resolve("node.properties"), "plugin.dir",
+                            pluginDir.orElseThrow(() -> new PrestoManagerException("pluginDir is empty")).toString());
+                }
+                catch (IOException e) {
+                    throw new PrestoManagerException("Failed to update pluginDir", e);
                 }
                 finally {
                     deleteTempFile(tempConfigDir);
