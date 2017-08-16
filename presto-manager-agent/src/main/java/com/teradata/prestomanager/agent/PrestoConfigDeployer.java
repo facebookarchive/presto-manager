@@ -106,7 +106,7 @@ public class PrestoConfigDeployer
      * the configuration directory. Otherwise, non-configurable default
      * configuration files will be created.
      */
-    public void deployDefaultConfig(Path configDir, Path dataDir, Path pluginDir)
+    public void deployDefaultConfig(Path configDir, Path catalogDir, Path dataDir, Path pluginDir, Path logDir)
             throws PrestoManagerException
     {
         try {
@@ -119,7 +119,7 @@ public class PrestoConfigDeployer
             else {
                 deleteDirectoryContents(configDir);
                 createConfigPropertiess(configDir);
-                createNodeProperties(configDir, pluginDir, dataDir);
+                createNodeProperties(configDir, catalogDir, dataDir, pluginDir, logDir);
                 addJvmConfig(configDir);
             }
         }
@@ -185,16 +185,17 @@ public class PrestoConfigDeployer
         createPropertiesFile(properties, configDir.resolve("config.properties"), "single node worker config");
     }
 
-    private static void createNodeProperties(Path configDir, Path dataDir, Path pluginDir)
+    private static void createNodeProperties(Path configDir, Path catalogDir, Path dataDir, Path pluginDir, Path logDir)
             throws PrestoManagerException
     {
-        // TODO: Add node.server-log-file & node.launcher-log-file
         Properties properties = new Properties();
         properties.setProperty("node.environment", "presto");
         properties.setProperty("node.id", randomUUID().toString());
-        properties.setProperty("node.data-dir", dataDir.toString());
-        properties.setProperty("catalog.config-dir", configDir.resolve("catalog").toString());
-        properties.setProperty("plugin.dir", pluginDir.toString());
+        properties.setProperty("node.data-dir", dataDir.toAbsolutePath().toString());
+        properties.setProperty("catalog.config-dir", catalogDir.toAbsolutePath().toString());
+        properties.setProperty("plugin.dir", pluginDir.toAbsolutePath().toString());
+        properties.setProperty("node.server-log-file", logDir.toAbsolutePath().resolve("server.log").toString());
+        properties.setProperty("node.launcher-log-file", logDir.toAbsolutePath().resolve("launcher.log").toString());
         createPropertiesFile(properties, configDir.resolve("node.properties"), null);
     }
 
