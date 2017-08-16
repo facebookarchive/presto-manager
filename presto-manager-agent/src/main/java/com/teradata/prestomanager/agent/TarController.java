@@ -257,12 +257,6 @@ public class TarController
         return isDirectory(INSTALLATION_DIR) && launcherScript.isPresent() && isRegularFile(launcherScript.get());
     }
 
-    public boolean isRunning()
-            throws PrestoManagerException
-    {
-        return isInstalled() && runLauncherCommand("status") == 0;
-    }
-
     private static void deleteTempFile(Path file)
     {
         try {

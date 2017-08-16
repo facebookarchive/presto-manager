@@ -217,12 +217,6 @@ public class RpmController
         return executor.runCommand("rpm", "-q", "presto-server-rpm") == 0;
     }
 
-    public boolean isRunning()
-            throws PrestoManagerException
-    {
-        return isInstalled() && executor.runCommand("service", "presto", "status") == 0;
-    }
-
     private static void deleteTempFile(Path file)
     {
         try {
