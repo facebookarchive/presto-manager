@@ -90,6 +90,7 @@ public class RpmController
     {
         Path tempFile;
         try {
+            LOGGER.debug("Downloading file from url: %s", packageUrl.toString());
             tempFile = downloadFile(packageUrl);
         }
         catch (IOException e) {
