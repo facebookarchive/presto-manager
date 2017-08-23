@@ -78,8 +78,10 @@ public class TarController
             configDeployer.deployDefaultConfig(configDir, catalogDir, dataDir,
                     pluginDir.orElseThrow(() -> new PrestoManagerException("pluginDir is empty")), logDir);
             configDeployer.deployDefaultConnectors(catalogDir);
+            updatePluginDir();
             LOGGER.debug("Successfully installed Presto");
         }
+
         finally {
             deleteTempFile(tempFile);
         }
@@ -150,6 +152,18 @@ public class TarController
         }
     }
 
+    private void updatePluginDir()
+            throws PrestoManagerException
+    {
+        try {
+            updateProperty(configDir.toAbsolutePath().resolve("node.properties"), "plugin.dir",
+                    pluginDir.orElseThrow(() -> new PrestoManagerException("pluginDir is empty")).toString());
+        }
+        catch (IOException e) {
+            throw new PrestoManagerException("Failed to update plugin-dir", e);
+        }
+    }
+
     public void uninstallAsync(boolean checkDependencies)
             throws PrestoManagerException
     {
@@ -163,6 +177,7 @@ public class TarController
             deleteRecursively(configDir);
             launcherScript = Optional.empty();
             launcherConfig = Optional.empty();
+            pluginDir = Optional.empty();
         }
         catch (IOException e) {
             throw new PrestoManagerException("Failed to uninstall Presto", e);
@@ -185,11 +200,7 @@ public class TarController
                     tarInstall(tempPackage);
                     postInstall();
                     configDeployer.restoreDirectory(tempConfigDir, configDir);
-                    updateProperty(configDir.toAbsolutePath().resolve("node.properties"), "plugin.dir",
-                            pluginDir.orElseThrow(() -> new PrestoManagerException("pluginDir is empty")).toString());
-                }
-                catch (IOException e) {
-                    throw new PrestoManagerException("Failed to update pluginDir", e);
+                    updatePluginDir();
                 }
                 finally {
                     deleteTempFile(tempConfigDir);
@@ -202,6 +213,7 @@ public class TarController
                 configDeployer.deployDefaultConfig(configDir, catalogDir, dataDir,
                         pluginDir.orElseThrow(() -> new PrestoManagerException("pluginDir is empty")), logDir);
                 configDeployer.deployDefaultConnectors(catalogDir);
+                updatePluginDir();
             }
         }
         finally {
