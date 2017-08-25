@@ -34,7 +34,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import java.util.List;
-import java.util.UUID;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.jetty.http.HttpMethod.GET;
@@ -63,7 +62,7 @@ public class ControllerControlAPI
             @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response startPresto(
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerControlAPI.class)
                 .httpMethod(POST)
@@ -83,7 +82,7 @@ public class ControllerControlAPI
     public Response stopPresto(
             @QueryParam("stopType") @DefaultValue("GRACEFUL") StopType stopType,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester.Builder apiRequester = requesterBuilder(ControllerControlAPI.class)
                 .httpMethod(POST)
@@ -102,7 +101,7 @@ public class ControllerControlAPI
             @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response restartPresto(
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerControlAPI.class)
                 .httpMethod(POST)
@@ -121,7 +120,7 @@ public class ControllerControlAPI
             @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response prestoStatus(
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerControlAPI.class)
                 .httpMethod(GET)

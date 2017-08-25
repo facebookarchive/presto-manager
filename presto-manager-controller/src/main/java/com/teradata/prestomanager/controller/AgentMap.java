@@ -16,19 +16,33 @@ package com.teradata.prestomanager.controller;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 
 public interface AgentMap
 {
-    Map<UUID, URI> getUrisByIds(Collection<UUID> ids);
+    /**
+     * No key or value in the returned map will be null.
+     */
+    Map<String, URI> getUrisByIds(Collection<String> ids);
 
-    Map<UUID, URI> getAllUris();
+    /**
+     * No key or value in the returned map will be null.
+     */
+    Map<String, URI> getAllUris();
 
-    Map<UUID, URI> getCoordinatorUris();
+    /**
+     * No key or value in the returned map will be null.
+     */
+    Map<String, URI> getCoordinatorUris();
 
-    Map<UUID, URI> getWorkerUris();
+    /**
+     * No key or value in the returned map will be null.
+     */
+    Map<String, URI> getWorkerUris();
 
-    default Map<UUID, URI> getUrisByScope(ApiScope scope)
+    /**
+     * No key or value in the returned map will be null.
+     */
+    default Map<String, URI> getUrisByScope(ApiScope scope)
     {
         switch (scope) {
             case ALL:

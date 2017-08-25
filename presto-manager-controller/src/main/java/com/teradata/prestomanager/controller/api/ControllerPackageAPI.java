@@ -36,7 +36,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import java.util.List;
-import java.util.UUID;
 
 import static org.eclipse.jetty.http.HttpMethod.DELETE;
 import static org.eclipse.jetty.http.HttpMethod.POST;
@@ -66,7 +65,7 @@ public class ControllerPackageAPI
     public Response install(String urlToFetchPackage,
             @QueryParam("checkDependencies") @DefaultValue("true") boolean checkDependencies,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester.Builder apiRequester = requesterBuilder(ControllerPackageAPI.class)
                 .httpMethod(PUT)
@@ -90,7 +89,7 @@ public class ControllerPackageAPI
             @QueryParam("forceUpgrade") @DefaultValue("false") boolean forceUpgrade,
             @QueryParam("preserveConfig") @DefaultValue("true") boolean preserveConfig,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester.Builder apiRequester = requesterBuilder(ControllerPackageAPI.class)
                 .httpMethod(POST)
@@ -113,7 +112,7 @@ public class ControllerPackageAPI
             @QueryParam("checkDependencies") @DefaultValue("true") boolean checkDependencies,
             @QueryParam("forceUninstall") @DefaultValue("false") boolean forceUninstall,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester.Builder apiRequester = requesterBuilder(ControllerPackageAPI.class)
                 .httpMethod(DELETE);

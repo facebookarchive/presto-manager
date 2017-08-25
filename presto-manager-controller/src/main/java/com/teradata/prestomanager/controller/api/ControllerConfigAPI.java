@@ -36,7 +36,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import java.util.List;
-import java.util.UUID;
 
 import static org.eclipse.jetty.http.HttpMethod.DELETE;
 import static org.eclipse.jetty.http.HttpMethod.GET;
@@ -64,7 +63,7 @@ public class ControllerConfigAPI
             @ApiResponse(code = 207, message = "Multiple responses available"),
             @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response getConfig(@QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConfigAPI.class)
                 .httpMethod(GET)
@@ -84,7 +83,7 @@ public class ControllerConfigAPI
     public Response getConfigFile(
             @PathParam("file") String file,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConfigAPI.class)
                 .pathMethod("getConfigFile")
@@ -107,7 +106,7 @@ public class ControllerConfigAPI
             @PathParam("file") String file,
             @PathParam("property") String property,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConfigAPI.class)
                 .pathMethod("getConfigProperty")
@@ -132,7 +131,7 @@ public class ControllerConfigAPI
             @PathParam("property") String property,
             String value,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConfigAPI.class)
                 .pathMethod("updateConfigProperty")
@@ -157,7 +156,7 @@ public class ControllerConfigAPI
             String url,
             @PathParam("file") String file,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConfigAPI.class)
                 .pathMethod("setConfigFileByURL")
@@ -180,7 +179,7 @@ public class ControllerConfigAPI
     public Response deleteConfigFile(
             @PathParam("file") String file,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConfigAPI.class)
                 .pathMethod("deleteConfigFile")
@@ -202,7 +201,7 @@ public class ControllerConfigAPI
             @PathParam("file") String file,
             @PathParam("property") String property,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConfigAPI.class)
                 .pathMethod("deleteConfigProperty")
