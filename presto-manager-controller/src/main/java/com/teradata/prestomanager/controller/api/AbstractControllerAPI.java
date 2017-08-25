@@ -20,7 +20,6 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 
 import java.util.Collection;
-import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
 
@@ -49,7 +48,7 @@ public abstract class AbstractControllerAPI
         return ApiRequester.builder(forwardingClient, clazz);
     }
 
-    protected Response forwardRequest(String scope, ApiRequester requester, Collection<UUID> nodeId)
+    protected Response forwardRequest(String scope, ApiRequester requester, Collection<String> nodeId)
     {
         return requestDispatcher.forwardRequest(scope, requester, nodeId);
     }

@@ -23,6 +23,7 @@ import io.airlift.discovery.client.ServiceType;
 import io.airlift.log.Logger;
 
 import javax.annotation.concurrent.ThreadSafe;
+import javax.validation.constraints.NotNull;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collector;
 
 import static java.util.Objects.requireNonNull;
@@ -53,10 +53,10 @@ public class DiscoveryAgentMap
     }
 
     @Override
-    public Map<UUID, URI> getUrisByIds(Collection<UUID> ids)
+    public Map<String, URI> getUrisByIds(Collection<String> ids)
     {
         refreshNodes();
-        Map<UUID, URI> uriMap = agentSet.stream()
+        Map<String, URI> uriMap = agentSet.stream()
                 .filter(agent -> ids.contains(agent.getId()))
                 .collect(toIdUriMap());
         if (ids.size() != uriMap.size()) {
@@ -68,7 +68,7 @@ public class DiscoveryAgentMap
     }
 
     @Override
-    public Map<UUID, URI> getAllUris()
+    public Map<String, URI> getAllUris()
     {
         refreshNodes();
         return agentSet.stream()
@@ -76,7 +76,7 @@ public class DiscoveryAgentMap
     }
 
     @Override
-    public Map<UUID, URI> getCoordinatorUris()
+    public Map<String, URI> getCoordinatorUris()
     {
         refreshNodes();
         return agentSet.stream()
@@ -85,7 +85,7 @@ public class DiscoveryAgentMap
     }
 
     @Override
-    public Map<UUID, URI> getWorkerUris()
+    public Map<String, URI> getWorkerUris()
     {
         refreshNodes();
         return agentSet.stream()
@@ -102,7 +102,7 @@ public class DiscoveryAgentMap
         for (ServiceDescriptor service : services) {
             Map<String, String> properties = service.getProperties();
             // TODO: Make agents start without an ID, and provide one on first discovery
-            UUID id = service.getId();
+            String id = service.getNodeId();
             boolean isCoordinator = Boolean.parseBoolean(properties.get("configured-presto-coordinator"));
             URI uri;
             try {
@@ -129,7 +129,7 @@ public class DiscoveryAgentMap
         agentSet = setBuilder.build();
     }
 
-    private static Collector<Agent, ?, ? extends Map<UUID, URI>> toIdUriMap()
+    private static Collector<Agent, ?, ? extends Map<String, URI>> toIdUriMap()
     {
         return ImmutableMap.toImmutableMap(Agent::getId, Agent::getUri);
     }
@@ -137,23 +137,25 @@ public class DiscoveryAgentMap
     // TODO: Reorder constructor parameters
     private static class Agent
     {
-        private URI uri;
-        private UUID id;
-        private boolean isCoordinator;
+        private final URI uri;
+        private final String id;
+        private final boolean isCoordinator;
 
-        private Agent(URI uri, boolean isCoordinator, UUID id)
+        private Agent(URI uri, boolean isCoordinator, String id)
         {
             this.uri = requireNonNull(uri, "uri is null");
             this.isCoordinator = isCoordinator;
             this.id = requireNonNull(id, "null agent id");
         }
 
+        @NotNull
         private URI getUri()
         {
             return uri;
         }
 
-        private UUID getId()
+        @NotNull
+        private String getId()
         {
             return id;
         }

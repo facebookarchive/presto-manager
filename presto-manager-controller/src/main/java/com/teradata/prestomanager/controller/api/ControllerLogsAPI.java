@@ -35,7 +35,6 @@ import javax.ws.rs.core.Response;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 import static org.eclipse.jetty.http.HttpMethod.DELETE;
 import static org.eclipse.jetty.http.HttpMethod.GET;
@@ -61,7 +60,7 @@ public class ControllerLogsAPI
             @ApiResponse(code = 207, message = "Multiple responses available"),
             @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response getConnectors(@QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerLogsAPI.class)
                 .httpMethod(GET)
@@ -85,7 +84,7 @@ public class ControllerLogsAPI
             @QueryParam("level") @DefaultValue("ALL") String level,
             @QueryParam("n") Integer maxEntries,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester.Builder apiRequester = requesterBuilder(ControllerLogsAPI.class)
                 .httpMethod(GET)
@@ -112,7 +111,7 @@ public class ControllerLogsAPI
             @PathParam("file") String file,
             @QueryParam("to") Instant toDate,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester.Builder apiRequester = requesterBuilder(ControllerLogsAPI.class)
                 .httpMethod(DELETE)

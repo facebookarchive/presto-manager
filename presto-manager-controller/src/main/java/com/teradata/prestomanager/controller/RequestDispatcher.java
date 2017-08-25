@@ -26,7 +26,6 @@ import java.net.URI;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.teradata.prestomanager.common.ExtendedStatus.MULTI_STATUS;
@@ -51,7 +50,7 @@ public class RequestDispatcher
     }
 
     public Response forwardRequest(
-            String scope, ApiRequester apiRequester, Collection<UUID> nodeId)
+            String scope, ApiRequester apiRequester, Collection<String> nodeId)
     {
         if (((scope != null) && (!nodeId.isEmpty()))
                 || (scope == null && nodeId.isEmpty())) {
@@ -69,7 +68,7 @@ public class RequestDispatcher
             return Response.status(BAD_REQUEST).entity("Invalid scope").build();
         }
 
-        Map<UUID, URI> uriMap;
+        Map<String, URI> uriMap;
         try {
             uriMap = nodeId.isEmpty()
                     ? agentMap.getUrisByScope(apiScope)
@@ -88,7 +87,7 @@ public class RequestDispatcher
         }
 
         // Jackson serializes ArrayLists as JSON arrays
-        Map<UUID, WrappedResponse> responses = uriMap.entrySet().parallelStream()
+        Map<String, WrappedResponse> responses = uriMap.entrySet().parallelStream()
                 .map(e -> new SimpleEntry<>(
                         e.getKey(),
                         wrapper.wrapResponse(apiRequester.send(e.getValue()))))

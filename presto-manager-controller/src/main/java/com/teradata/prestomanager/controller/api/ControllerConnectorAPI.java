@@ -36,7 +36,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import java.util.List;
-import java.util.UUID;
 
 import static org.eclipse.jetty.http.HttpMethod.DELETE;
 import static org.eclipse.jetty.http.HttpMethod.GET;
@@ -64,7 +63,7 @@ public class ControllerConnectorAPI
             @ApiResponse(code = 207, message = "Multiple responses available"),
             @ApiResponse(code = 400, message = "Request contains invalid parameters")})
     public Response getConnectors(@QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConnectorAPI.class)
                 .httpMethod(GET)
@@ -84,7 +83,7 @@ public class ControllerConnectorAPI
     public Response getConnectorFile(
             @PathParam("file") String file,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConnectorAPI.class)
                 .pathMethod("getConnectorFile")
@@ -107,7 +106,7 @@ public class ControllerConnectorAPI
             @PathParam("file") String file,
             @PathParam("property") String property,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConnectorAPI.class)
                 .pathMethod("getConnectorProperty")
@@ -132,7 +131,7 @@ public class ControllerConnectorAPI
             @PathParam("property") String property,
             String value,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConnectorAPI.class)
                 .pathMethod("updateConnectorProperty")
@@ -157,7 +156,7 @@ public class ControllerConnectorAPI
             String url,
             @PathParam("file") String file,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConnectorAPI.class)
                 .pathMethod("setConnectorFileByURL")
@@ -180,7 +179,7 @@ public class ControllerConnectorAPI
     public Response deleteConnectorFile(
             @PathParam("file") String file,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConnectorAPI.class)
                 .pathMethod("deleteConnectorFile")
@@ -202,7 +201,7 @@ public class ControllerConnectorAPI
             @PathParam("file") String file,
             @PathParam("property") String property,
             @QueryParam("scope") String scope,
-            @QueryParam("nodeId") List<UUID> nodeId)
+            @QueryParam("nodeId") List<String> nodeId)
     {
         ApiRequester apiRequester = requesterBuilder(ControllerConnectorAPI.class)
                 .pathMethod("deleteConnectorProperty")
