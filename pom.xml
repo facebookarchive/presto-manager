@@ -45,6 +45,7 @@
         <module>presto-manager-common</module>
         <module>presto-manager-agent</module>
         <module>presto-manager-controller</module>
+        <module>presto-manager-tests</module>
     </modules>
 
     <dependencies>
